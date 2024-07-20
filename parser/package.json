@@ -1,0 +1,26 @@
+{
+  "name": "parser",
+  "version": "2.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node ./src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12",
+    "db": "^4.0.1",
+    "dotenv": "^16.3.1",
+    "knex": "^2.5.1",
+    "knex-paginate": "^3.1.1",
+    "knex-stringcase": "^1.4.6",
+    "lodash": "^4.17.21",
+    "moment": "^2.30.1",
+    "moment-timezone": "^0.5.45",
+    "pg": "^8.11.1",
+    "ws": "^8.11.0"
+  }
+}

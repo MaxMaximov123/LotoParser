@@ -1,0 +1,30 @@
+version: '3'
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: loto
+      POSTGRES_PASSWORD: vf984bv923bhdbsf83
+      POSTGRES_DB: games
+      POSTGRES_PORT: 5432
+    volumes:
+      - ./data:/var/lib/postgresql/data
+    ports:
+      - 3200:5432
+    # network_mode: "host"
+  
+  parser:
+    restart: always
+    build:
+      context: .
+      dockerfile: parser/Dockerfile
+    environment:
+      DATABASE_POOL_MAX: 40
+      DATABASE_POOL_MIN: 5
+      DATABASE_URL: postgres://loto:vf984bv923bhdbsf83@localhost:3200/games
+      DATABASE_SCHEMA: public
+      RESTART_TIME: 5
+    depends_on:
+      - db
+    network_mode: "host"

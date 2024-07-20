@@ -1,0 +1,4 @@
+data/
+.idea/
+parser/node_modules/
+parser/.env
