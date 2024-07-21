@@ -73,8 +73,8 @@ export default class Parser {
 
         for (let newGame of newGames) {
           if (String(newGame.dateTime) in this.allGames) {
-            console.log(newGame, this.allGames[newGame.dateTime])
             continueSearching = false;
+            break;
           }
 
           newGamesIntoDB.push(newGame);
@@ -103,10 +103,7 @@ export default class Parser {
       const options = {
           method: 'POST',
           headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-              // 'Access-Control-Allow-Origin': '*',
-              // 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-              // 'Access-Control-Allow-Headers': 'Content-Type',
+              'Content-Type': 'application/x-www-form-urlencoded'
           },
           body: data
       };
@@ -155,10 +152,5 @@ export default class Parser {
     }
 
     this.scanning();
-
-    // let htmlTable = await this.getHtmlByPage(2);
-    // let newGames = await this.getGamesByHtml(htmlTable.data);
-
-    // console.log(newGames)
   }
 }
