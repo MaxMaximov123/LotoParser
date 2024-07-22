@@ -126,7 +126,7 @@ export default class Parser {
   async getHtmlByPage(page) {
     let responseData = await this.postRequest(
       'https://www.stoloto.ru/draw-results/oxota/load',
-      `page=${page}&mode=date&super=false&from=01.01.2012&to=20.07.2024`
+      `page=${page}&mode=date&super=false&from=01.01.2012&to=${moment().format('DD.MM.YYYY')}`
     );
 
     return responseData;
