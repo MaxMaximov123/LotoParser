@@ -43,7 +43,8 @@ export default class Parser {
       });
 
       let game = {
-          dateTime: this.convertTZ(moment(dateTime, 'DD.MM.YYYY HH:mm').toDate(), 'Europe/Moscow'),
+          // dateTime: this.convertTZ(moment(dateTime, 'DD.MM.YYYY HH:mm').toDate(), 'Europe/Moscow'),
+          dateTime: moment(dateTime, 'DD.MM.YYYY HH:mm').toDate(),
     
           upperNumber_1: zones[0][0],
           upperNumber_2: zones[0][1],
