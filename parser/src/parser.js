@@ -84,9 +84,14 @@ export default class Parser {
         if (newGamesIntoDB.length === 0) {
           break;
         }
+        
+        try {
+          await db('games').insert(newGamesIntoDB).onConflict().ignore();
+        }
+        catch(e) {
+          console.log(e);
+        }
 
-
-        await db('games').insert(newGamesIntoDB).onConflict().ignore();
         for (let newGameIntoDB of newGamesIntoDB) {
           this.allGames[newGameIntoDB.dateTime] = newGameIntoDB;
         }
@@ -158,8 +163,8 @@ export default class Parser {
       this.allGames[game.dateTime] = game;
     }
 
-    console.log(await this.getHtmlByPage(147))
-    console.log(await this.getGamesByHtml(await this.getHtmlByPage(147)))
+    // console.log(await this.getHtmlByPage(147))
+    // console.log(await this.getGamesByHtml(await this.getHtmlByPage(147)))
     this.scanning();
   }
 }
