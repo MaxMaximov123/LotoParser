@@ -95,6 +95,7 @@ export default class Parser {
           }
           catch(e) {
             console.log('DB insert error', e);
+            console.log(newGamesIntoDB);
           }
 
           for (let newGameIntoDB of newGamesIntoDB) {
