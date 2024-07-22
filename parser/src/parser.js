@@ -103,7 +103,7 @@ export default class Parser {
           }
 
           console.log(Object.keys(this.allGames).length, page);
-          await this.waitForTimeout(500);
+          await this.waitForTimeout(1000);
         } catch(e) {
           console.log('Last page', e);
           break
