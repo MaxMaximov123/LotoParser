@@ -58,7 +58,6 @@ export default class Parser {
 
       games.push(game);
     });
-
     return games;
   }
 
