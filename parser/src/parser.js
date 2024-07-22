@@ -31,6 +31,7 @@ export default class Parser {
 
     $('.elem').each((index, element) => {
       let dateTime = $(element).find('.draw_date').attr('title');
+
       const zoneElements = $(element).find('.zone');
       const zones = [[], []];
 
@@ -42,7 +43,7 @@ export default class Parser {
       });
 
       let game = {
-          dateTime: moment(dateTime, 'DD.MM.YYYY HH:mm').add(3, 'hours').toDate(),
+          dateTime: this.convertTZ(moment(dateTime, 'DD.MM.YYYY HH:mm').toDate(), 'Europe/Moscow'),
     
           upperNumber_1: zones[0][0],
           upperNumber_2: zones[0][1],
@@ -96,6 +97,10 @@ export default class Parser {
 
       await this.waitForTimeout(1000 * 60 * 60);
     }
+  }
+
+  convertTZ(date, tzString) {
+    return new Date((typeof date === "string" ? new Date(date) : date).toLocaleString("en-US", {timeZone: tzString}));
   }
 
   async postRequest(url, data) {
