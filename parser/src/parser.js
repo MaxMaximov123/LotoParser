@@ -92,6 +92,7 @@ export default class Parser {
         page++;
 
         console.log(Object.keys(this.allGames).length, page)
+        await this.waitForTimeout(1000);
       }
 
       await this.waitForTimeout(1000 * 60 * 60);
@@ -154,7 +155,6 @@ export default class Parser {
     for (let game of db_ames) {
       this.allGames[game.dateTime] = game;
     }
-
     this.scanning();
   }
 }
