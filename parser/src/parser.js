@@ -92,7 +92,6 @@ export default class Parser {
           
           try {
             await db('games').insert(newGamesIntoDB).onConflict().ignore();
-            newGamesIntoDB = [];
           }
           catch(e) {
             console.log('DB insert error', e);
@@ -102,6 +101,8 @@ export default class Parser {
           for (let newGameIntoDB of newGamesIntoDB) {
             this.allGames[newGameIntoDB.dateTime] = newGameIntoDB;
           }
+
+          newGamesIntoDB = [];
 
           console.log(Object.keys(this.allGames).length, page);
           await this.waitForTimeout(1000);
