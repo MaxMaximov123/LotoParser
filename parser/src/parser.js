@@ -85,6 +85,7 @@ export default class Parser {
           break;
         }
 
+
         await db('games').insert(newGamesIntoDB).onConflict().ignore();
         for (let newGameIntoDB of newGamesIntoDB) {
           this.allGames[newGameIntoDB.dateTime] = newGameIntoDB;
@@ -128,7 +129,7 @@ export default class Parser {
   async getHtmlByPage(page) {
     let responseData = await this.postRequest(
       'https://www.stoloto.ru/draw-results/oxota/load',
-      `page=${page}&mode=date&super=false&from=01.01.2012&to=${moment().format('DD.MM.YYYY')}`
+      `page=${page}&mode=date&super=false&from=01.01.2024&to=${moment().format('DD.MM.YYYY')}`
     );
 
     return responseData;
@@ -156,6 +157,9 @@ export default class Parser {
     for (let game of db_ames) {
       this.allGames[game.dateTime] = game;
     }
+
+    console.log(await this.getHtmlByPage(147))
+    console.log(await this.getGamesByHtml(await this.getHtmlByPage(147)))
     this.scanning();
   }
 }
