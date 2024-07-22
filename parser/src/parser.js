@@ -92,6 +92,7 @@ export default class Parser {
           
           try {
             await db('games').insert(newGamesIntoDB).onConflict().ignore();
+            newGamesIntoDB = [];
           }
           catch(e) {
             console.log('DB insert error', e);
