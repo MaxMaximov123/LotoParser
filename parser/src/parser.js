@@ -69,37 +69,44 @@ export default class Parser {
       let newGamesIntoDB = [];
 
       while (continueSearching) {
-        let htmlTable = await this.getHtmlByPage(page);
-        let newGames = await this.getGamesByHtml(htmlTable.data);
 
-        for (let newGame of newGames) {
-          if (String(newGame.dateTime) in this.allGames) {
-            continueSearching = false;
+        try {
+          let htmlTable = await this.getHtmlByPage(page);
+          let newGames = await this.getGamesByHtml(htmlTable.data);
+
+          page++;
+
+          for (let newGame of newGames) {
+            if (String(newGame.dateTime) in this.allGames) {
+              continueSearching = false;
+              console.log('This game already exist');
+              break;
+            }
+
+            newGamesIntoDB.push(newGame);
+          }
+          
+          if (newGamesIntoDB.length === 0) {
             break;
           }
+          
+          try {
+            await db('games').insert(newGamesIntoDB).onConflict().ignore();
+          }
+          catch(e) {
+            console.log('DB insert error', e);
+          }
 
-          newGamesIntoDB.push(newGame);
-        }
-        
-        if (newGamesIntoDB.length === 0) {
-          break;
-        }
-        
-        try {
-          await db('games').insert(newGamesIntoDB).onConflict().ignore();
-        }
-        catch(e) {
-          console.log(e);
-        }
+          for (let newGameIntoDB of newGamesIntoDB) {
+            this.allGames[newGameIntoDB.dateTime] = newGameIntoDB;
+          }
 
-        for (let newGameIntoDB of newGamesIntoDB) {
-          this.allGames[newGameIntoDB.dateTime] = newGameIntoDB;
+          console.log(Object.keys(this.allGames).length, page);
+          await this.waitForTimeout(500);
+        } catch(e) {
+          console.log('Last page', e);
+          break
         }
-
-        page++;
-
-        console.log(Object.keys(this.allGames).length, page)
-        await this.waitForTimeout(1000);
       }
 
       await this.waitForTimeout(1000 * 60 * 60);
@@ -163,8 +170,12 @@ export default class Parser {
       this.allGames[game.dateTime] = game;
     }
 
-    // console.log(await this.getHtmlByPage(147))
-    // console.log(await this.getGamesByHtml(await this.getHtmlByPage(147)))
+    // console.log(await this.getHtmlByPage(1470))
+    // try {
+    //   console.log(await this.getGamesByHtml(await this.getHtmlByPage(1470)));
+    // } catch(e) {
+    //   console.log(999, e);
+    // }
     this.scanning();
   }
 }
