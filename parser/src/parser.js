@@ -112,6 +112,8 @@ export default class Parser {
         }
       }
 
+      console.log('New cycle');
+
       await this.waitForTimeout(1000 * 60 * 60);
     }
   }
