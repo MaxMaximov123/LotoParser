@@ -410,8 +410,6 @@ export default class Parser {
       tasks.push(pageNewsProxies.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', { waitUntil: 'domcontentloaded', timeout: 60000 }));
     }
 
-    await Promise.all(tasks);
-
     for (let page of this.pagesReportsProxies) {
       let ip = await page.evaluate(async (url) => {
         return await (await fetch(url)).text();
@@ -419,6 +417,8 @@ export default class Parser {
 
       console.log(await (await fetch(`https://ipinfo.io/widget/demo/${ip}`)).json())
     }
+
+    await Promise.all(tasks);
 
     this.scanningNews();
     this.scanningReports();
