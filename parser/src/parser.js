@@ -369,11 +369,8 @@ export default class Parser {
 
     let tasksPagesNewsProxies = [];
     let tasksPagesReportsProxies = [];
-
-    console.log(1);
     
     for (let proxy of this.proxies) {
-      console.log(2);
       this.browsersProxies.push(
         await puppeteer.launch(
           {
@@ -388,13 +385,9 @@ export default class Parser {
           }
         )
       );
-    
-      console.log(3);
       
       tasksPagesNewsProxies.push(this.browsersProxies.at(-1).newPage());
       tasksPagesReportsProxies.push(this.browsersProxies.at(-1).newPage());
-
-      console.log(4);
     }
 
     this.pagesReportsProxies = await Promise.all(tasksPagesReportsProxies);
@@ -403,17 +396,14 @@ export default class Parser {
     let tasks = [];
 
     for (let pageReportsProxies of this.pagesReportsProxies) {
-      await pageReportsProxies.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam');
+      tasks.push(pageReportsProxies.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', { waitUntil: 'domcontentloaded' }));
     }
 
     for (let pageNewsProxies of this.pagesNewsProxies) {
-      await pageNewsProxies.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5');
+      tasks.push(pageNewsProxies.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', { waitUntil: 'domcontentloaded' }));
     }
 
-    console.log(5);
-
-    // await Promise.all(tasks);
-
+    await Promise.all(tasks);
 
     // try {
     //   for (let page of this.pagesReportsProxies) {
