@@ -396,26 +396,26 @@ export default class Parser {
     let tasks = [];
 
     for (let pageReportsProxies of this.pagesReportsProxies) {
-      tasks.push(pageReportsProxies.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', { waitUntil: 'domcontentloaded', timeout: 60000 }));
+      tasks.push(pageReportsProxies.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam'));
     }
 
     for (let pageNewsProxies of this.pagesNewsProxies) {
-      tasks.push(pageNewsProxies.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', { waitUntil: 'domcontentloaded', timeout: 60000 }));
+      tasks.push(pageNewsProxies.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5'));
     }
 
     await Promise.all(tasks);
 
-    try {
-      for (let page of this.pagesReportsProxies) {
-        let ip = await page.evaluate(async (url) => {
-          return await (await fetch(url)).text();
-        }, 'https://ipinfo.io/ip');
+    // try {
+    //   for (let page of this.pagesReportsProxies) {
+    //     let ip = await page.evaluate(async (url) => {
+    //       return await (await fetch(url)).text();
+    //     }, 'https://ipinfo.io/ip');
 
-        console.log((await (await fetch(`https://ipinfo.io/widget/demo/${ip}`)).json())?.data?.city)
-      }
-    } catch(e) {
-      console.log(e);
-    }
+    //     console.log((await (await fetch(`https://ipinfo.io/widget/demo/${ip}`)).json())?.data?.city)
+    //   }
+    // } catch(e) {
+    //   console.log(e);
+    // }
 
     this.scanningNews();
     this.scanningReports();
