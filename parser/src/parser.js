@@ -361,18 +361,12 @@ export default class Parser {
         )
     );
 
-    console.log(this.proxies);
+    console.log(111, this.proxies);
 
     this.browsersProxies = [];
     this.pagesReportsProxies = [];
     this.pagesNewsProxies = [];
 
-    // let pages = [
-    //   this.webPageNews.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam'),
-    //   this.webPageReport.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5')
-    // ];
-
-    // await Promise.all(pages);
     let tasksPagesNewsProxies = [];
     let tasksPagesReportsProxies = [];
     
@@ -391,7 +385,6 @@ export default class Parser {
           }
         )
       );
-
       
       tasksPagesNewsProxies.push(this.browsersProxies.at(-1).newPage());
       tasksPagesReportsProxies.push(this.browsersProxies.at(-1).newPage());
