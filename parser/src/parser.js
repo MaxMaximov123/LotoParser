@@ -269,9 +269,9 @@ export default class Parser {
         }
       }
 
-      fs.writeFileSync('./src/newNews.json', JSON.stringify(this.newNews, null, 2));
+      fs.writeFileSync('./data/newNews.json', JSON.stringify(this.newNews, null, 2));
 
-      fs.writeFileSync('./src/historyNews.json', JSON.stringify(this.historyNews, null, 2));
+      fs.writeFileSync('./data/historyNews.json', JSON.stringify(this.historyNews, null, 2));
 
       await this.waitForTimeout(1000 * 30);
     }
@@ -292,7 +292,7 @@ export default class Parser {
       
       let hashOfData = MD5(JSON.stringify(row)).toString();
       if (!this.historyReports.includes(hashOfData)) {
-        // tasksOfSavingReports.push(this.downloadAndExtractFile(row['Файл'], './reports', MD5(row['Файл']).toString()));
+        // tasksOfSavingReports.push(this.downloadAndExtractFile(row['Файл'], './data/reports', MD5(row['Файл']).toString()));
 
         // post request!!!!!!!
         this.newReports.push(row);
@@ -316,25 +316,25 @@ export default class Parser {
       let tasksOfCompaniesNames = Object.keys(this.tickers).map(companyName => this.saveReportForCompanyName(companyName));
       await Promise.all(tasksOfCompaniesNames);
 
-      fs.writeFileSync('./src/historyReports.json', JSON.stringify(this.historyReports, null, 2));
+      fs.writeFileSync('./data/historyReports.json', JSON.stringify(this.historyReports, null, 2));
 
-      fs.writeFileSync('./src/newReports.json', JSON.stringify(this.newReports, null, 2));
+      fs.writeFileSync('./data/newReports.json', JSON.stringify(this.newReports, null, 2));
       await this.waitForTimeout(30 * 1000);
     }
   }
 
   async start() {
-    this.historyNews = JSON.parse(fs.readFileSync('./src/historyNews.json', 'utf8'));
-    this.historyReports = JSON.parse(fs.readFileSync('./src/historyReports.json', 'utf8'));
+    this.historyNews = JSON.parse(fs.readFileSync('./data/historyNews.json', 'utf8'));
+    this.historyReports = JSON.parse(fs.readFileSync('./data/historyReports.json', 'utf8'));
 
-    let tickersFile = JSON.parse(fs.readFileSync('./src/tickers.json', 'utf8'));
+    let tickersFile = JSON.parse(fs.readFileSync('./data/tickers.json', 'utf8'));
     this.tickers = {};
 
     for (let ticker of tickersFile) {
       this.tickers[ticker.name] = ticker;
     }
 
-    let subtitlesFile = JSON.parse(fs.readFileSync('./src/subtitles.json', 'utf8'));
+    let subtitlesFile = JSON.parse(fs.readFileSync('./data/subtitles.json', 'utf8'));
     this.subtitles = {};
     
     for (let subtitle of subtitlesFile) {
