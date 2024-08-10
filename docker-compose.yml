@@ -9,4 +9,4 @@ services:
       RESTART_TIME: 5
     network_mode: "host"
     volumes:
-      - /data/mysql:/var/lib/mysql
+      - /data:/data
