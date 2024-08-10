@@ -9,4 +9,7 @@ services:
       RESTART_TIME: 5
     network_mode: "host"
     volumes:
-      - /data:/data
+      - ./parser/data:/app/data
+
+volumes:
+  data:

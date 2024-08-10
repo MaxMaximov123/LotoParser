@@ -10,7 +10,12 @@ import unzipper from 'unzipper';
 import path from 'path';
 import fetch from 'node-fetch';
 import AdmZip from 'adm-zip';
+import { dirname } from 'path';
+import { URL } from 'url'; 
+import { fileURLToPath } from 'url';
 
+const __dirname = dirname(fileURLToPath(import.meta.url + '/..'));
+const __filename = fileURLToPath(import.meta.url);
 
 export default class Parser {
   postKeys = [];
@@ -264,6 +269,7 @@ export default class Parser {
         let hashOfData = MD5(JSON.stringify(newsToPost)).toString();
         if (!this.historyNews.includes(hashOfData)) {
           // post req
+
           this.newNews.push(newsToPost);
           this.historyNews.push(hashOfData);
         }
@@ -292,7 +298,9 @@ export default class Parser {
       
       let hashOfData = MD5(JSON.stringify(row)).toString();
       if (!this.historyReports.includes(hashOfData)) {
-        // tasksOfSavingReports.push(this.downloadAndExtractFile(row['Файл'], './data/reports', MD5(row['Файл']).toString()));
+        tasksOfSavingReports.push(this.downloadAndExtractFile(row['Файл'], './data/reports', MD5(row['Файл']).toString()));
+
+        row['Файл'] = `${__dirname}/data/reports/${MD5(row['Файл']).toString()}`;
 
         // post request!!!!!!!
         this.newReports.push(row);
@@ -358,7 +366,7 @@ export default class Parser {
 
     await Promise.all(pages);
 
-    // this.scanningNews();
+    this.scanningNews();
     this.scanningReports();
   }
 }
