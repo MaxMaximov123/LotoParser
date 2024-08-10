@@ -386,8 +386,8 @@ export default class Parser {
               '--disable-web-security',
               '--no-sandbox'
             ],
-            // headless: 'new',
-            headless: false
+            headless: 'new',
+            // headless: false
           }
         )
       );
