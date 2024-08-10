@@ -403,18 +403,17 @@ export default class Parser {
     let tasks = [];
 
     for (let pageReportsProxies of this.pagesReportsProxies) {
-      tasks.push(pageReportsProxies.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam'));
+      await pageReportsProxies.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam');
     }
 
     for (let pageNewsProxies of this.pagesNewsProxies) {
-      tasks.push(pageNewsProxies.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5'));
+      await pageNewsProxies.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5');
     }
 
     console.log(5);
 
-    await Promise.all(tasks);
+    // await Promise.all(tasks);
 
-    console.log(6);
 
     // try {
     //   for (let page of this.pagesReportsProxies) {
