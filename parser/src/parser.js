@@ -11,8 +11,10 @@ import path from 'path';
 import fetch from 'node-fetch';
 import AdmZip from 'adm-zip';
 import { dirname } from 'path';
-import { URL } from 'url'; 
+import { URL } from 'url';
 import { fileURLToPath } from 'url';
+import HttpsProxyAgent from 'https-proxy-agent';
+import ProxyChain from 'proxy-chain';
 
 const __dirname = dirname(fileURLToPath(import.meta.url + '/..'));
 const __filename = fileURLToPath(import.meta.url);
@@ -50,23 +52,10 @@ export default class Parser {
         }
 
         const response = await fetch(url);
-
-        let result = await this.webPageReport.evaluate(async (url) => {
-          response = await fetch(url);
-
-          if (!response.ok) {
-            return { ok: false, data: response.statusText };
-          }
-          return { ok: true, data: await response.buffer() };
-        }, url);
-        
-        console.log(result);
-
-        if (!result.ok) {
+        if (!response.ok) {
             throw new Error(`Ошибка загрузки: ${response.statusText}`);
-            return
         }
-        const buffer = result.data;
+        const buffer = await response.buffer();
 
         const zipPath = path.join(outputDir, 'temp.zip');
         fs.writeFileSync(zipPath, buffer);
@@ -80,85 +69,89 @@ export default class Parser {
 
         const zipEntry = zipEntries[0];
         const originalFileName = zipEntry.entryName;
-        const fileExtension = path.extname(originalFileName);
+        const fileExtension = path.extname(originalFileName);  // Получаем расширение файла
 
-        const sanitizedFileName = this.sanitizeFileName(newFileNameWithoutExt) + fileExtension;
+        const sanitizedFileName = this.sanitizeFileName(newFileNameWithoutExt) + fileExtension;  // Добавляем расширение к новому имени
         const extractedFilePath = path.join(outputDir, sanitizedFileName);
 
         fs.writeFileSync(extractedFilePath, zipEntry.getData());
+        console.log(`Файл сохранен: ${extractedFilePath}`);
 
         fs.unlinkSync(zipPath);
     } catch (error) {
-        console.error('Error of saving:', url, error.message);
+        console.error('Ошибка:', error.message);
     }
-  }
+};
 
   async fetchReportTableData(url) {
     try {
-        let html = await this.getFromSite(url, this.webPageReport);
-        
-        let $ = cheerio.load(html);
+      let html = await this.getFromSite(url);
 
-        let table = $('.files-table');
+      let $ = cheerio.load(html);
 
-        let headers = [];
-        table.find('tbody tr th').each((index, element) => {
-            headers.push($(element).text().trim().replace(/\u00AD/g, ''))
-        });
+      let table = $('.files-table');
 
-        let rows = [];
-        table.find('tbody tr').each((index, element) => {
-          let row = {};
-          $(element).find('td').each((i, elem) => {
-              let key = headers[i];
+      let headers = [];
+      table.find('tbody tr th').each((index, element) => {
+        headers.push($(element).text().trim().replace(/\u00AD/g, ''))
+      });
 
-              if (!key) {
-                return;
-              }
+      let rows = [];
+      table.find('tbody tr').each((index, element) => {
+        let row = {};
+        $(element).find('td').each((i, elem) => {
+          let key = headers[i];
 
-              let value;
-              if (key === 'Файл') {
-                $(elem).find('a').each((i, elem) => {
-                  value = $(elem).attr('href');
-                });
-
-              } else {
-                value = $(elem).text().trim().replace(/\u00AD/g, '');
-              }
-              row[key] = value;
-          });
-
-          if (Object.keys(row).length && row['Файл']) {
-            rows.push(row);
+          if (!key) {
+            return;
           }
+
+          let value;
+          if (key === 'Файл') {
+            $(elem).find('a').each((i, elem) => {
+              value = $(elem).attr('href');
+            });
+
+          } else {
+            value = $(elem).text().trim().replace(/\u00AD/g, '');
+          }
+          row[key] = value;
         });
 
-        return rows;
+        if (Object.keys(row).length && row['Файл']) {
+          rows.push(row);
+        }
+      });
+
+      return rows;
     } catch (error) {
-        console.error('Ошибка при получении данных:', error);
-        return [];
+      console.error('Ошибка при получении данных:', error);
+      return [];
     }
   }
 
   async getContentFromElement(url) {
     try {
-      let html = await this.getFromSite(url, this.webPageNews);
+      let html = await this.getFromSite(url);
 
       let $ = cheerio.load(html);
       let contentElement = $('#cont_wrap');
 
       if (contentElement.length > 0) {
-          return contentElement.text().trim();
+        return contentElement.text().trim();
       } else {
-          console.log('Элемент с id "cont_wrap" не найден');
+        console.log('Элемент с id "cont_wrap" не найден');
       }
-  } catch (error) {
+    } catch (error) {
       console.error('Ошибка:', error.message);
-  }
+    }
   }
 
   async postFromSite(url, data) {
-    let result = await this.webPageNews.evaluate(async (url, data) => {
+    let randomIndexPage = Math.floor(Math.random() * this.pagesNewsProxies.length);
+    let page = this.pagesReportsProxies[randomIndexPage];
+
+    let result = await page.evaluate(async (url, data) => {
       return await (await fetch(url, {
         "headers": {
           "content-type": "application/x-www-form-urlencoded; charset=UTF-8"
@@ -178,27 +171,30 @@ export default class Parser {
     let matchStart, matchEnd;
 
     while ((matchStart = regexStart.exec(input)) !== null) {
-        let startIdx = matchStart.index;
-        
-        regexEnd.lastIndex = regexStart.lastIndex;
-        matchEnd = regexEnd.exec(input);
+      let startIdx = matchStart.index;
 
-        let endIdx;
-        if (matchEnd !== null) {
-            endIdx = matchEnd.index;
-        } else {
-            endIdx = input.length;
-        }
+      regexEnd.lastIndex = regexStart.lastIndex;
+      matchEnd = regexEnd.exec(input);
 
-        let substring = input.slice(startIdx, endIdx).trim();
-        result.push(substring);
-        regexStart.lastIndex = endIdx;
+      let endIdx;
+      if (matchEnd !== null) {
+        endIdx = matchEnd.index;
+      } else {
+        endIdx = input.length;
+      }
+
+      let substring = input.slice(startIdx, endIdx).trim();
+      result.push(substring);
+      regexStart.lastIndex = endIdx;
     }
 
     return result;
-}
+  }
 
-  async getFromSite(url, page) {
+  async getFromSite(url) {
+    let randomIndexPage = Math.floor(Math.random() * this.pagesReportsProxies.length);
+    let page = this.pagesReportsProxies[randomIndexPage];
+
     let result = await page.evaluate(async (url) => {
       return await (await fetch(url)).text();
     }, url);
@@ -216,7 +212,7 @@ export default class Parser {
 
 
       let responseData = [];
-      
+
       try {
         responseData = await this.postFromSite(
           'https://www.e-disclosure.ru/api/search/sevents',
@@ -224,10 +220,10 @@ export default class Parser {
         );
 
         responseData = responseData.foundEventsList;
-      } catch(e) {
-          console.log('Error while getting POST', e)
-        }
-      
+      } catch (e) {
+        console.log('Error while getting POST', e)
+      }
+
       let r = [];
       for (let news of responseData) {
         if (!this.tickers[news.companyName]) {
@@ -295,7 +291,7 @@ export default class Parser {
       row.name = companyName;
       row.id = this.tickers[companyName].id;
       row.type = type;
-      
+
       let hashOfData = MD5(JSON.stringify(row)).toString();
       if (!this.historyReports.includes(hashOfData)) {
         tasksOfSavingReports.push(this.downloadAndExtractFile(row['Файл'], './data/reports', MD5(row['Файл']).toString()));
@@ -344,29 +340,78 @@ export default class Parser {
 
     let subtitlesFile = JSON.parse(fs.readFileSync('./data/subtitles.json', 'utf8'));
     this.subtitles = {};
-    
+
     for (let subtitle of subtitlesFile) {
       this.subtitles[subtitle.subtitle] = subtitle;
     }
 
-    this.browser = await puppeteer.launch(
-      {
-        args: ['--no-sandbox'],
-        headless: 'new',
-        // headless: false
-      }
+    // this.browser = await puppeteer.launch(
+    //   {
+    //     args: ['--no-sandbox'],
+    //     headless: 'new',
+    //     headless: false
+    //   }
+    // );
+    // this.webPageNews = await this.browser.newPage();
+    // this.webPageReport = await this.browser.newPage();
+    
+    this.proxies = await Promise.all(
+      JSON.parse(fs.readFileSync('./data/proxies.json', 'utf8')).map(
+        async proxy => await ProxyChain.anonymizeProxy(proxy)
+        )
     );
-    this.webPageNews = await this.browser.newPage();
-    this.webPageReport = await this.browser.newPage();
 
-    let pages = [
-      this.webPageNews.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam'),
-      this.webPageReport.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5')
-    ];
+    this.browsersProxies = [];
+    this.pagesReportsProxies = [];
+    this.pagesNewsProxies = [];
 
-    await Promise.all(pages);
+    // let pages = [
+    //   this.webPageNews.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam'),
+    //   this.webPageReport.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5')
+    // ];
+
+    // await Promise.all(pages);
+    let tasksPagesNewsProxies = [];
+    let tasksPagesReportsProxies = [];
+    
+    for (let proxy of this.proxies) {
+      this.browsersProxies.push(
+        await puppeteer.launch(
+          {
+            args: [
+              `--proxy-server=${proxy}`,
+              '--ignore-certificate-errors',
+              '--disable-web-security',
+              '--no-sandbox'
+            ],
+            headless: 'new',
+            // headless: false
+          }
+        )
+      );
+      
+      tasksPagesNewsProxies.push(this.browsersProxies.at(-1).newPage());
+      tasksPagesReportsProxies.push(this.browsersProxies.at(-1).newPage());
+    }
+
+    this.pagesReportsProxies = await Promise.all(tasksPagesReportsProxies);
+    this.pagesNewsProxies = await Promise.all(tasksPagesNewsProxies);
+
+    let tasks = [];
+
+    for (let pageReportsProxies of this.pagesReportsProxies) {
+      tasks.push(pageReportsProxies.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam'));
+    }
+
+    for (let pageNewsProxies of this.pagesNewsProxies) {
+      tasks.push(pageNewsProxies.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5'));
+    }
+
+    await Promise.all(tasks);
 
     this.scanningNews();
     this.scanningReports();
+
+    
   }
 }
