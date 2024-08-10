@@ -391,6 +391,7 @@ export default class Parser {
           }
         )
       );
+
       
       tasksPagesNewsProxies.push(this.browsersProxies.at(-1).newPage());
       tasksPagesReportsProxies.push(this.browsersProxies.at(-1).newPage());
@@ -410,6 +411,14 @@ export default class Parser {
     }
 
     await Promise.all(tasks);
+
+    for (let page of this.pagesReportsProxies) {
+      let ip = await page.evaluate(async (url) => {
+        return await (await fetch(url)).text();
+      }, 'https://ipinfo.io/ip');
+
+      console.log(await (await fetch(`https://ipinfo.io/widget/demo/${ip}`)).json())
+    }
 
     this.scanningNews();
     this.scanningReports();
