@@ -361,7 +361,7 @@ export default class Parser {
         )
     );
 
-    console.log(111, this.proxies);
+    console.log(this.proxies);
 
     this.browsersProxies = [];
     this.pagesReportsProxies = [];
@@ -369,8 +369,11 @@ export default class Parser {
 
     let tasksPagesNewsProxies = [];
     let tasksPagesReportsProxies = [];
+
+    console.log(1);
     
     for (let proxy of this.proxies) {
+      console.log(2);
       this.browsersProxies.push(
         await puppeteer.launch(
           {
@@ -385,9 +388,13 @@ export default class Parser {
           }
         )
       );
+    
+      console.log(3);
       
       tasksPagesNewsProxies.push(this.browsersProxies.at(-1).newPage());
       tasksPagesReportsProxies.push(this.browsersProxies.at(-1).newPage());
+
+      console.log(4);
     }
 
     this.pagesReportsProxies = await Promise.all(tasksPagesReportsProxies);
@@ -403,7 +410,11 @@ export default class Parser {
       tasks.push(pageNewsProxies.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5'));
     }
 
+    console.log(5);
+
     await Promise.all(tasks);
+
+    console.log(6);
 
     // try {
     //   for (let page of this.pagesReportsProxies) {
