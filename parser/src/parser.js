@@ -1,8 +1,15 @@
-import { db } from './database.js';
 import config from './config.js';
 import moment from 'moment';
 import 'moment-timezone';
-import cheerio from 'cheerio';
+import puppeteer from 'puppeteer';
+import fs, { chownSync } from 'fs';
+import { JSDOM } from 'jsdom';
+import * as cheerio from 'cheerio';
+import MD5 from "crypto-js/md5.js";
+import unzipper from 'unzipper';
+import path from 'path';
+import fetch from 'node-fetch';
+import AdmZip from 'adm-zip';
 
 
 export default class Parser {
@@ -24,158 +31,334 @@ export default class Parser {
     await new Promise((resolve) => setTimeout(resolve, time));
   }
 
-  async getGamesByHtml(html) {
-    let $ = cheerio.load(html);
-
-    let games = [];
-
-    $('.elem').each((index, element) => {
-      let dateTime = $(element).find('.draw_date').attr('title');
-
-      const zoneElements = $(element).find('.zone');
-      const zones = [[], []];
-
-      zoneElements.each((i, el) => {
-        let numbers = $(el).find('b');
-        numbers.each((ind, elem) => {
-          zones[i].push(Number($(elem).text()));
-        });
-      });
-
-      let game = {
-          // dateTime: this.convertTZ(moment(dateTime, 'DD.MM.YYYY HH:mm').toDate(), 'Europe/Moscow'),
-          dateTime: moment(dateTime, 'DD.MM.YYYY HH:mm').toDate(),
-    
-          upperNumber_1: zones[0][0],
-          upperNumber_2: zones[0][1],
-          upperNumber_3: zones[0][2],
-          upperNumber_4: zones[0][3],
-    
-          bottomNumber_1: zones[1][0],
-          bottomNumber_2: zones[1][1],
-          bottomNumber_3: zones[1][2],
-          bottomNumber_4: zones[1][3],
-        }
-
-      games.push(game);
-    });
-    return games;
+  sanitizeFileName(fileName) {
+    return fileName
+      .replace(/[<>:"\/\\|?*\x00-\x1F]/g, '_')  // Заменяем недопустимые символы на "_"
+      .replace(/[^\x00-\x7F]/g, '')  // Удаляем нелатинские символы, которые могут вызывать ошибки
+      .trim();
   }
 
-  async scanning() {
+  async downloadAndExtractFile(url, outputDir, newFileNameWithoutExt) {
+    try {
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir);
+        }
+
+        const response = await fetch(url);
+
+        let result = await this.webPageReport.evaluate(async (url) => {
+          response = await fetch(url);
+
+          if (!response.ok) {
+            return { ok: false, data: response.statusText };
+          }
+          return { ok: true, data: await response.buffer() };
+        }, url);
+        
+        console.log(result);
+
+        if (!result.ok) {
+            throw new Error(`Ошибка загрузки: ${response.statusText}`);
+            return
+        }
+        const buffer = result.data;
+
+        const zipPath = path.join(outputDir, 'temp.zip');
+        fs.writeFileSync(zipPath, buffer);
+
+        const zip = new AdmZip(zipPath);
+        const zipEntries = zip.getEntries();
+
+        if (zipEntries.length !== 1) {
+            throw new Error('Ожидался один файл в архиве');
+        }
+
+        const zipEntry = zipEntries[0];
+        const originalFileName = zipEntry.entryName;
+        const fileExtension = path.extname(originalFileName);
+
+        const sanitizedFileName = this.sanitizeFileName(newFileNameWithoutExt) + fileExtension;
+        const extractedFilePath = path.join(outputDir, sanitizedFileName);
+
+        fs.writeFileSync(extractedFilePath, zipEntry.getData());
+
+        fs.unlinkSync(zipPath);
+    } catch (error) {
+        console.error('Error of saving:', url, error.message);
+    }
+  }
+
+  async fetchReportTableData(url) {
+    try {
+        let html = await this.getFromSite(url, this.webPageReport);
+        
+        let $ = cheerio.load(html);
+
+        let table = $('.files-table');
+
+        let headers = [];
+        table.find('tbody tr th').each((index, element) => {
+            headers.push($(element).text().trim().replace(/\u00AD/g, ''))
+        });
+
+        let rows = [];
+        table.find('tbody tr').each((index, element) => {
+          let row = {};
+          $(element).find('td').each((i, elem) => {
+              let key = headers[i];
+
+              if (!key) {
+                return;
+              }
+
+              let value;
+              if (key === 'Файл') {
+                $(elem).find('a').each((i, elem) => {
+                  value = $(elem).attr('href');
+                });
+
+              } else {
+                value = $(elem).text().trim().replace(/\u00AD/g, '');
+              }
+              row[key] = value;
+          });
+
+          if (Object.keys(row).length && row['Файл']) {
+            rows.push(row);
+          }
+        });
+
+        return rows;
+    } catch (error) {
+        console.error('Ошибка при получении данных:', error);
+        return [];
+    }
+  }
+
+  async getContentFromElement(url) {
+    try {
+      let html = await this.getFromSite(url, this.webPageNews);
+
+      let $ = cheerio.load(html);
+      let contentElement = $('#cont_wrap');
+
+      if (contentElement.length > 0) {
+          return contentElement.text().trim();
+      } else {
+          console.log('Элемент с id "cont_wrap" не найден');
+      }
+  } catch (error) {
+      console.error('Ошибка:', error.message);
+  }
+  }
+
+  async postFromSite(url, data) {
+    let result = await this.webPageNews.evaluate(async (url, data) => {
+      return await (await fetch(url, {
+        "headers": {
+          "content-type": "application/x-www-form-urlencoded; charset=UTF-8"
+        },
+        "body": data,
+        "method": "POST"
+      })).json();
+    }, url, data);
+
+    return result;
+  }
+
+  extractSubstrings(input) {
+    let regexStart = /\d\.\d\.\d/g;
+    let regexEnd = /\d\.\d\.\d|\d\.\d|$/g;
+    let result = [];
+    let matchStart, matchEnd;
+
+    while ((matchStart = regexStart.exec(input)) !== null) {
+        let startIdx = matchStart.index;
+        
+        regexEnd.lastIndex = regexStart.lastIndex;
+        matchEnd = regexEnd.exec(input);
+
+        let endIdx;
+        if (matchEnd !== null) {
+            endIdx = matchEnd.index;
+        } else {
+            endIdx = input.length;
+        }
+
+        let substring = input.slice(startIdx, endIdx).trim();
+        result.push(substring);
+        regexStart.lastIndex = endIdx;
+    }
+
+    return result;
+}
+
+  async getFromSite(url, page) {
+    let result = await page.evaluate(async (url) => {
+      return await (await fetch(url)).text();
+    }, url);
+
+    return result;
+  }
+
+  async scanningNews() {
     while (true) {
-      this.startDate = (await db('startDate').select('*'))[0].startDate;
-      console.log(`StartDate: ${this.startDate}`);
-      let continueSearching = true;
-      let page = 1;
-      let newGamesIntoDB = [];
 
-      while (continueSearching) {
+      let finishDate = moment().format('DD.MM.YYYY');
+      let startDate = moment();
+      startDate.add(-1, 'M');
+      startDate = startDate.format('DD.MM.YYYY');
 
-        try {
-          let htmlTable = await this.getHtmlByPage(page);
-          let newGames = await this.getGamesByHtml(htmlTable.data);
 
-          page++;
+      let responseData = [];
+      
+      try {
+        responseData = await this.postFromSite(
+          'https://www.e-disclosure.ru/api/search/sevents',
+          `eventTypeTerm=&radView=0&dateStart=${startDate}&dateFinish=${finishDate}&textfieldEvent=&radReg=FederalDistricts&districtsCheckboxGroup=-1&regionsCheckboxGroup=-1&branchesCheckboxGroup=-1&textfieldCompany=&lastPageSize=10&lastPageNumber=1&query=&queryEvent=`
+        );
 
-          for (let newGame of newGames) {
-            if (String(newGame.dateTime) in this.allGames) {
-              continueSearching = false;
-              console.log('This game already exist');
-              break;
+        responseData = responseData.foundEventsList;
+      } catch(e) {
+          console.log('Error while getting POST', e)
+        }
+      
+      let r = [];
+      for (let news of responseData) {
+        if (!this.tickers[news.companyName]) {
+          console.log(`Skip news unknown company name id: ${news.pseudoGUID}`);
+          continue;
+        }
+
+        if (!this.subtitles[news.eventName]) {
+          console.log(`Skip news unknown subtitle id: ${news.pseudoGUID}`);
+          continue;
+        }
+
+        let newsToPost = {
+          ticker: this.tickers[news.companyName].name,
+          name: news.companyName,
+          fullText: await this.getContentFromElement(`https://www.e-disclosure.ru/portal/event.aspx?EventId=${news.pseudoGUID}`),
+          textes: [],
+        };
+
+        for (let filter of this.subtitles[news.eventName].filters || []) {
+          for (let startFilter of filter.start) {
+            for (let endFilter of filter.end) {
+              let startIndex = newsToPost.fullText.indexOf(startFilter);
+              let endIndex = newsToPost.fullText.indexOf(endFilter);
+              newsToPost.textes.push(newsToPost.fullText.slice(startIndex, endIndex));
             }
+          }
+        }
 
-            newGamesIntoDB.push(newGame);
+        for (let substring of this.extractSubstrings(newsToPost.fullText)) {
+          for (let key of this.subtitles[news.eventName].keys) {
+            if (substring.includes(key)) {
+              newsToPost.textes.push(substring);
+            }
           }
-          
-          if (newGamesIntoDB.length === 0) {
-            break;
-          }
-          
-          try {
-            await db('games').insert(newGamesIntoDB).onConflict().ignore();
-          }
-          catch(e) {
-            console.log('DB insert error', e);
-            console.log(newGamesIntoDB);
-          }
+        }
 
-          for (let newGameIntoDB of newGamesIntoDB) {
-            this.allGames[newGameIntoDB.dateTime] = newGameIntoDB;
-          }
-
-          newGamesIntoDB = [];
-
-          console.log(Object.keys(this.allGames).length, page);
-          await this.waitForTimeout(1000);
-        } catch(e) {
-          console.log('Last page', e);
-          break
+        r.push(newsToPost);
+        let hashOfData = MD5(JSON.stringify(newsToPost)).toString();
+        if (!this.historyNews.includes(hashOfData)) {
+          // post req
+          this.newNews.push(newsToPost);
+          this.historyNews.push(hashOfData);
         }
       }
 
-      console.log('New cycle');
+      fs.writeFileSync('./src/newNews.json', JSON.stringify(this.newNews, null, 2));
 
-      await this.waitForTimeout(1000 * 60 * 60);
+      fs.writeFileSync('./src/historyNews.json', JSON.stringify(this.historyNews, null, 2));
+
+      await this.waitForTimeout(1000 * 30);
     }
   }
 
-  convertTZ(date, tzString) {
-    return new Date((typeof date === "string" ? new Date(date) : date).toLocaleString("en-US", {timeZone: tzString}));
-  }
+  async saveReportForType(type, companyName) {
+    let url = `https://www.e-disclosure.ru/portal/files.aspx?id=${this.tickers[companyName].id}&type=${type}`;
 
-  async postRequest(url, data) {
-    return new Promise((resolve, reject) => {
-      const options = {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          body: data
-      };
+    let dataOfTable = await this.fetchReportTableData(url);
+
+    let tasksOfSavingReports = [];
+
+    for (let row of dataOfTable) {
+      row.ticker = this.tickers[companyName].ticker;
+      row.name = companyName;
+      row.id = this.tickers[companyName].id;
+      row.type = type;
       
-      fetch(url, options)
-        .then(response => response.json())
-        .then(result => {
-            resolve(result);
-        })
-        .catch(error => {
-          reject(error);
-        });
-    })
+      let hashOfData = MD5(JSON.stringify(row)).toString();
+      if (!this.historyReports.includes(hashOfData)) {
+        // tasksOfSavingReports.push(this.downloadAndExtractFile(row['Файл'], './reports', MD5(row['Файл']).toString()));
+
+        // post request!!!!!!!
+        this.newReports.push(row);
+        this.historyReports.push(hashOfData);
+      }
+    }
+
+    // await Promise.all(tasksOfSavingReports);
   }
 
-  async getHtmlByPage(page) {
-    let responseData = await this.postRequest(
-      'https://www.stoloto.ru/draw-results/oxota/load',
-      `page=${page}&mode=date&super=false&from=${this.startDate}&to=${moment().format('DD.MM.YYYY')}`
-    );
+  async saveReportForCompanyName(companyName) {
+    let tasksOfTypes = this.tickers[companyName].types.map(type => this.saveReportForType(type, companyName));
+    await Promise.all(tasksOfTypes);
+    console.log(companyName, 'saved!');
+  }
 
-    return responseData;
+  async scanningReports() {
+    while (true) {
+      this.newReports = [];
+      this.newNews = [];
+      let tasksOfCompaniesNames = Object.keys(this.tickers).map(companyName => this.saveReportForCompanyName(companyName));
+      await Promise.all(tasksOfCompaniesNames);
+
+      fs.writeFileSync('./src/historyReports.json', JSON.stringify(this.historyReports, null, 2));
+
+      fs.writeFileSync('./src/newReports.json', JSON.stringify(this.newReports, null, 2));
+      await this.waitForTimeout(30 * 1000);
+    }
   }
 
   async start() {
-    
-    // await db('games').insert({
-    //   dateTime: new Date(),
+    this.historyNews = JSON.parse(fs.readFileSync('./src/historyNews.json', 'utf8'));
+    this.historyReports = JSON.parse(fs.readFileSync('./src/historyReports.json', 'utf8'));
 
-    //   upperNumber_1: 1,
-    //   upperNumber_2: 2,
-    //   upperNumber_3: 3,
-    //   upperNumber_4: 4,
+    let tickersFile = JSON.parse(fs.readFileSync('./src/tickers.json', 'utf8'));
+    this.tickers = {};
 
-    //   bottomNumber_1: 1,
-    //   bottomNumber_2: 2,
-    //   bottomNumber_3: 3,
-    //   bottomNumber_4: 4,
-    // });
-
-    let db_ames = await db('games').select('*');
-    this.allGames = {};
-
-    for (let game of db_ames) {
-      this.allGames[game.dateTime] = game;
+    for (let ticker of tickersFile) {
+      this.tickers[ticker.name] = ticker;
     }
-    this.scanning();
+
+    let subtitlesFile = JSON.parse(fs.readFileSync('./src/subtitles.json', 'utf8'));
+    this.subtitles = {};
+    
+    for (let subtitle of subtitlesFile) {
+      this.subtitles[subtitle.subtitle] = subtitle;
+    }
+
+    this.browser = await puppeteer.launch(
+      {
+        args: ['--no-sandbox'],
+        headless: 'new',
+        // headless: false
+      }
+    );
+    this.webPageNews = await this.browser.newPage();
+    this.webPageReport = await this.browser.newPage();
+
+    let pages = [
+      this.webPageNews.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam'),
+      this.webPageReport.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5')
+    ];
+
+    await Promise.all(pages);
+
+    // this.scanningNews();
+    this.scanningReports();
   }
 }
