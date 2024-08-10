@@ -361,6 +361,8 @@ export default class Parser {
         )
     );
 
+    console.log(this.proxies);
+
     this.browsersProxies = [];
     this.pagesReportsProxies = [];
     this.pagesNewsProxies = [];
