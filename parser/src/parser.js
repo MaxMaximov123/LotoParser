@@ -386,8 +386,8 @@ export default class Parser {
               '--disable-web-security',
               '--no-sandbox'
             ],
-            headless: 'new',
-            // headless: false
+            // headless: 'new',
+            headless: false
           }
         )
       );
@@ -403,11 +403,11 @@ export default class Parser {
     let tasks = [];
 
     for (let pageReportsProxies of this.pagesReportsProxies) {
-      tasks.push(pageReportsProxies.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam'));
+      tasks.push(pageReportsProxies.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', { waitUntil: 'domcontentloaded' }));
     }
 
     for (let pageNewsProxies of this.pagesNewsProxies) {
-      tasks.push(pageNewsProxies.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5'));
+      tasks.push(pageNewsProxies.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', { waitUntil: 'domcontentloaded' }));
     }
 
     await Promise.all(tasks);

@@ -1,3 +1,6 @@
 .idea/
 parser/node_modules/
 parser/.env
+parser/.DS_Store
+data/.DS_Store
+.DS_Store
