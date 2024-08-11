@@ -266,7 +266,6 @@ export default class Parser {
           }
         }
 
-        r.push(newsToPost);
         let hashOfData = MD5(JSON.stringify(newsToPost)).toString();
         if (!this.historyNews.includes(hashOfData)) {
           // post req
