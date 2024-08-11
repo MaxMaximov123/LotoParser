@@ -411,28 +411,29 @@ export default class Parser {
         )
       );
       
-      tasksPagesNewsProxies.push(this.browsersProxies.at(-1).newPage());
-      tasksPagesReportsProxies.push(this.browsersProxies.at(-1).newPage());
+      this.pagesReportsProxies.push(await this.browsersProxies.at(-1).newPage());
+      await this.pagesReportsProxies.at(-1).goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', { waitUntil: 'networkidle0' });
+      await this.pagesReportsProxies.at(-1).waitForSelector('body');
+
+      this.pagesNewsProxies.push(this.browsersProxies.at(-1).newPage());
+      await this.pagesNewsProxies.at(-1).goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', { waitUntil: 'networkidle0' });
+      await this.pagesNewsProxies.at(-1).waitForSelector('body');
     }
 
-    this.pagesReportsProxies = await Promise.all(tasksPagesReportsProxies);
-    this.pagesNewsProxies = await Promise.all(tasksPagesNewsProxies);
+    // this.pagesReportsProxies = await Promise.all(tasksPagesReportsProxies);
+    // this.pagesNewsProxies = await Promise.all(tasksPagesNewsProxies);
 
-    let tasks = [];
+    // let tasks = [];
 
-    for (let pageReportsProxies of this.pagesReportsProxies) {
-      tasks.push(async () => {
-        await pageReportsProxies.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', { waitUntil: 'networkidle2' });
-        await pageReportsProxies.waitForSelector('body');
-      });
-    }
+    // for (let pageReportsProxies of this.pagesReportsProxies) {
+    //   await pageReportsProxies.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', { waitUntil: 'networkidle0' });
+    //   await pageReportsProxies.waitForSelector('body');
+    // }
 
-    for (let pageNewsProxies of this.pagesNewsProxies) {
-      tasks.push(async () => {
-        await pageNewsProxies.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', { waitUntil: 'networkidle2' });
-        await pageNewsProxies.waitForSelector('body');
-      });
-    }
+    // for (let pageNewsProxies of this.pagesNewsProxies) {
+    //   await pageNewsProxies.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', { waitUntil: 'networkidle0' });
+    //   await pageNewsProxies.waitForSelector('body');
+    // }
 
     // await Promise.all(tasks);
 
