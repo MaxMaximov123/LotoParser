@@ -228,7 +228,6 @@ export default class Parser {
         console.log('Error while getting POST', e)
       }
 
-      let r = [];
       for (let news of responseData) {
         if (!this.tickers[news.companyName]) {
           console.log(`Skip news unknown company name id: ${news.pseudoGUID}`);
@@ -444,7 +443,7 @@ export default class Parser {
     // }
 
     this.scanningNews();
-    // this.scanningReports();
+    this.scanningReports();
 
     
   }
