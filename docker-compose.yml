@@ -13,7 +13,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '10.0'       # Максимум 2 CPU
+          cpus: '1.0'       # Максимум 2 CPU
           memory: 16G        # Максимум 4 ГБ памяти
         reservations:
           cpus: '1.0'       # Минимум 1 CPU
