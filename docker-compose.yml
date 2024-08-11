@@ -14,10 +14,10 @@ services:
       resources:
         limits:
           cpus: '1.0'       # Максимум 2 CPU
-          memory: 16G        # Максимум 4 ГБ памяти
+          memory: 8G        # Максимум 4 ГБ памяти
         reservations:
           cpus: '1.0'       # Минимум 1 CPU
-          memory: 4G        # Минимум 2 ГБ памяти
+          memory: 1G        # Минимум 2 ГБ памяти
 
 volumes:
   data:

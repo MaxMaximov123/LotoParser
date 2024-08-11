@@ -334,16 +334,9 @@ export default class Parser {
 
   async scanningReports() {
     while (true) {
-      let tasksOfCompaniesNames = [];
       for (let companyName of Object.keys(this.tickers)) {
-        tasksOfCompaniesNames.push(this.saveReportForCompanyName(companyName));
-
-        if (tasksOfCompaniesNames.length >= 2) {
-          await Promise.all(tasksOfCompaniesNames);
-          tasksOfCompaniesNames = [];
-        }
+        await this.saveReportForCompanyName(companyName);
       }
-      await Promise.all(tasksOfCompaniesNames);
 
       fs.writeFileSync('./data/historyReports.json', JSON.stringify(this.historyReports, null, 2));
 
