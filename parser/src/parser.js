@@ -305,7 +305,7 @@ export default class Parser {
           await this.downloadAndExtractFile(url, './data/reports', MD5(row['Файл']).toString())
         })());
 
-        if (tasksOfSavingReports.length >= 10) {
+        if (tasksOfSavingReports.length >= 3) {
           await Promise.all(tasksOfSavingReports);
           tasksOfSavingReports = [];
         }
@@ -338,7 +338,7 @@ export default class Parser {
       for (let companyName of Object.keys(this.tickers)) {
         tasksOfCompaniesNames.push(this.saveReportForCompanyName(companyName));
 
-        if (tasksOfCompaniesNames.length >= 10) {
+        if (tasksOfCompaniesNames.length >= 3) {
           await Promise.all(tasksOfCompaniesNames);
           tasksOfCompaniesNames = [];
         }
