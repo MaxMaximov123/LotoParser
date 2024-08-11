@@ -51,10 +51,10 @@ export default class Parser {
           fs.mkdirSync(outputDir, { recursive: true });
       }
 
-      console.log('Saving', url);
+      // console.log('Saving', url);
 
       if (fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.pdf`) || fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.doc`)) {
-        console.log(`Файл уже сохранен: ${outputDir}/${newFileNameWithoutExt}`);
+        // console.log(`Файл уже сохранен: ${outputDir}/${newFileNameWithoutExt}`);
         return;
       }
 
@@ -87,11 +87,11 @@ export default class Parser {
       const extractedFilePath = path.join(outputDir, sanitizedFileName);
 
       fs.writeFileSync(extractedFilePath, zipEntry.getData());
-      console.log(`Файл сохранен: ${extractedFilePath}`);
+      // console.log(`Файл сохранен: ${extractedFilePath}`);
 
       fs.unlinkSync(zipPath);
   } catch (error) {
-      console.error('Ошибка:', error.message);
+      // console.error('Ошибка:', error.message);
   }
   };
 
@@ -289,6 +289,16 @@ export default class Parser {
     }
   }
 
+  async controlSavingFiles(url, path, name) {
+    await this.waitForTimeout(Math.floor((1 + Math.random()) * 5000));
+    this.tasksOfSavingReportsFiles.push(this.downloadAndExtractFile(url, path, name));
+
+    if (this.tasksOfSavingReportsFiles.length >= 3) {
+      await Promise.all(this.tasksOfSavingReportsFiles);
+      this.tasksOfSavingReportsFiles = [];
+    }
+  }
+
   async saveReportForType(type, companyName) {
     let url = `https://www.e-disclosure.ru/portal/files.aspx?id=${this.tickers[companyName].id}&type=${type}`;
 
@@ -305,15 +315,8 @@ export default class Parser {
       let hashOfData = MD5(JSON.stringify(row)).toString();
 
       let url = row['Файл'];
-      tasksOfSavingReports.push((async () => {
-        await this.waitForTimeout(Math.floor((1 + Math.random()) * 5000));
-        await this.downloadAndExtractFile(url, './data/reports', MD5(row['Файл']).toString())
-      })());
 
-      if (tasksOfSavingReports.length >= 3) {
-        await Promise.all(tasksOfSavingReports);
-        tasksOfSavingReports = [];
-      }
+      this.controlSavingFiles(this.downloadAndExtractFile(url, './data/reports', MD5(row['Файл']).toString()));
 
       row['Файл'] = `${__dirname}/data/reports/${MD5(row['Файл']).toString()}`;
 
@@ -325,8 +328,6 @@ export default class Parser {
         this.historyReports.push(hashOfData);
       }
     }
-
-    await Promise.all(tasksOfSavingReports);
   }
 
   async saveReportForCompanyName(companyName) {
@@ -349,6 +350,7 @@ export default class Parser {
   }
 
   async start() {
+    this.tasksOfSavingReportsFiles = [];
     this.newNews = [];
     this.newReports = [];
     this.historyNews = JSON.parse(fs.readFileSync('./data/historyNews.json', 'utf8'));
