@@ -278,7 +278,7 @@ export default class Parser {
 
       fs.writeFileSync('./data/historyNews.json', JSON.stringify(this.historyNews, null, 2));
 
-      await this.waitForTimeout(1000 * 60);
+      await this.waitForTimeout(1000 * 60 * 5);
     }
   }
 
@@ -299,7 +299,7 @@ export default class Parser {
       if (!this.historyReports.includes(hashOfData)) {
         let url = row['Файл'];
         tasksOfSavingReports.push((async () => {
-          await this.waitForTimeout(Math.floor((1 + Math.random()) * 1000));
+          await this.waitForTimeout(Math.floor((1 + Math.random()) * 5000));
           await this.downloadAndExtractFile(url, './data/reports', MD5(row['Файл']).toString())
         })());
 
@@ -317,7 +317,7 @@ export default class Parser {
   async saveReportForCompanyName(companyName) {
     let tasksOfTypes = this.tickers[companyName].types.map(
       type => (async (type) => {
-        await this.waitForTimeout(Math.floor((1 + Math.random()) * 1000));
+        await this.waitForTimeout(Math.floor((1 + Math.random()) * 5000));
         await this.saveReportForType(type, companyName);
       })(type)
       );
@@ -333,7 +333,7 @@ export default class Parser {
       fs.writeFileSync('./data/historyReports.json', JSON.stringify(this.historyReports, null, 2));
 
       fs.writeFileSync('./data/newReports.json', JSON.stringify(this.newReports, null, 2));
-      await this.waitForTimeout(60 * 1000);
+      await this.waitForTimeout(60 * 1000 * 5);
     }
   }
 
