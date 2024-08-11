@@ -47,6 +47,8 @@ export default class Parser {
 
   async downloadAndExtractFile(url, outputDir, newFileNameWithoutExt) {
     try {
+
+      console.log('Saving', url);
       if (!fs.existsSync(outputDir)) {
           fs.mkdirSync(outputDir, { recursive: true });
       }
@@ -270,6 +272,8 @@ export default class Parser {
 
           this.newNews.push(newsToPost);
           this.historyNews.push(hashOfData);
+          
+          console.log(newsToPost);
         }
       }
 
@@ -309,11 +313,11 @@ export default class Parser {
       }
     }
 
-    // await Promise.all(tasksOfSavingReports);
+    await Promise.all(tasksOfSavingReports);
   }
 
   async saveReportForCompanyName(companyName) {
-    let tasksOfTypes = this.tickers[companyName].types.map(async type => {
+    let tasksOfTypes = this.tickers[companyName].types.map(async (type) => {
       await this.waitForTimeout(Math.floor((1 + Math.random()) * 1000));
       await this.saveReportForType(type, companyName)
     }
