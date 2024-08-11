@@ -10,6 +10,14 @@ services:
     network_mode: "host"
     volumes:
       - ./parser/data:/app/data
+    deploy:
+      resources:
+        limits:
+          cpus: '10.0'       # Максимум 2 CPU
+          memory: 16G        # Максимум 4 ГБ памяти
+        reservations:
+          cpus: '1.0'       # Минимум 1 CPU
+          memory: 4G        # Минимум 2 ГБ памяти
 
 volumes:
   data:
