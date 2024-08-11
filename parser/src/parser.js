@@ -305,19 +305,21 @@ export default class Parser {
       row.type = type;
 
       let hashOfData = MD5(JSON.stringify(row)).toString();
+
+      let url = row['Файл'];
+      tasksOfSavingReports.push((async () => {
+        await this.waitForTimeout(Math.floor((1 + Math.random()) * 5000));
+        await this.downloadAndExtractFile(url, './data/reports', MD5(row['Файл']).toString())
+      })());
+
+      if (tasksOfSavingReports.length >= 5) {
+        await Promise.all(tasksOfSavingReports);
+        tasksOfSavingReports = [];
+      }
+
+      row['Файл'] = `${__dirname}/data/reports/${MD5(row['Файл']).toString()}`;
+
       if (!this.historyReports.includes(hashOfData)) {
-        let url = row['Файл'];
-        tasksOfSavingReports.push((async () => {
-          await this.waitForTimeout(Math.floor((1 + Math.random()) * 5000));
-          await this.downloadAndExtractFile(url, './data/reports', MD5(row['Файл']).toString())
-        })());
-
-        if (tasksOfSavingReports.length >= 2) {
-          await Promise.all(tasksOfSavingReports);
-          tasksOfSavingReports = [];
-        }
-
-        row['Файл'] = `${__dirname}/data/reports/${MD5(row['Файл']).toString()}`;
 
         // post request!!!!!!!
         this.newReports.push(row);
