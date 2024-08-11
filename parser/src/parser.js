@@ -54,6 +54,8 @@ export default class Parser {
       let randomIndexPage = Math.floor(Math.random() * this.pagesReportsProxies.length);
       let page = this.pagesReportsProxies[randomIndexPage];
 
+      console.log('Saving', url);
+
       const response = await page.evaluate(async (url) => {
           const res = await fetch(url, { timeout: 60000 });
           const buffer = await res.arrayBuffer(); // возвращаемый массив байтов
@@ -423,7 +425,7 @@ export default class Parser {
 
     await Promise.all(tasks);
 
-    // this.scanningNews();
+    this.scanningNews();
     this.scanningReports();
 
     
