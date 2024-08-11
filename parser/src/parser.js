@@ -252,21 +252,23 @@ export default class Parser {
           fullText: await this.getContentFromElement(`https://www.e-disclosure.ru/portal/event.aspx?EventId=${news.pseudoGUID}`),
           textes: [],
         };
-
-        for (let filter of this.subtitles[news.eventName].filters || []) {
-          for (let startFilter of filter.start) {
-            for (let endFilter of filter.end) {
-              let startIndex = newsToPost.fullText.indexOf(startFilter);
-              let endIndex = newsToPost.fullText.indexOf(endFilter);
-              newsToPost.textes.push(newsToPost.fullText.slice(startIndex, endIndex));
+        
+        if (newsToPost.fullText) {
+          for (let filter of this.subtitles[news.eventName].filters || []) {
+            for (let startFilter of filter.start) {
+              for (let endFilter of filter.end) {
+                let startIndex = newsToPost.fullText.indexOf(startFilter);
+                let endIndex = newsToPost.fullText.indexOf(endFilter);
+                newsToPost.textes.push(newsToPost.fullText.slice(startIndex, endIndex));
+              }
             }
           }
-        }
 
-        for (let substring of this.extractSubstrings(newsToPost.fullText)) {
-          for (let key of this.subtitles[news.eventName].keys) {
-            if (substring.includes(key)) {
-              newsToPost.textes.push(substring);
+          for (let substring of this.extractSubstrings(newsToPost.fullText)) {
+            for (let key of this.subtitles[news.eventName].keys) {
+              if (substring.includes(key)) {
+                newsToPost.textes.push(substring);
+              }
             }
           }
         }
