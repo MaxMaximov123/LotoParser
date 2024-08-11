@@ -390,8 +390,16 @@ export default class Parser {
               `--proxy-server=${proxy}`,
               '--ignore-certificate-errors',
               '--disable-web-security',
-              '--no-sandbox'
+              '--no-sandbox',
+              '--disable-setuid-sandbox',
+              '--disable-dev-shm-usage',
+              '--disable-gpu',
+              '--disable-software-rasterizer',
+              '--single-process',
+              '--no-zygote'
+
             ],
+            timeout: 60000,
             headless: 'new',
             // headless: false
           }
