@@ -51,10 +51,15 @@ export default class Parser {
           fs.mkdirSync(outputDir, { recursive: true });
       }
 
+      console.log('Saving', url);
+
+      if (fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.pdf`) || fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.doc`)) {
+        console.log(`Файл уже сохранен: ${outputDir}/${newFileNameWithoutExt}`);
+        return;
+      }
+
       let randomIndexPage = Math.floor(Math.random() * this.pagesReportsProxies.length);
       let page = this.pagesReportsProxies[randomIndexPage];
-
-      console.log('Saving', url);
 
       const response = await page.evaluate(async (url) => {
           const res = await fetch(url, { timeout: 60000 });
@@ -426,7 +431,9 @@ export default class Parser {
       });
     }
 
-    await Promise.all(tasks);
+    // await Promise.all(tasks);
+
+    await this.waitForTimeout(1000 * 10);
 
     this.scanningNews();
     this.scanningReports();
