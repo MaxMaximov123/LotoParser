@@ -399,7 +399,9 @@ export default class Parser {
               '--no-zygote'
 
             ],
+            protocolTimeout: 120000,
             timeout: 60000,
+            // headless: true,
             headless: 'new',
             // headless: false
           }
@@ -416,11 +418,17 @@ export default class Parser {
     let tasks = [];
 
     for (let pageReportsProxies of this.pagesReportsProxies) {
-      tasks.push(pageReportsProxies.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', { waitUntil: 'domcontentloaded' }));
+      tasks.push(async () => {
+        await pageReportsProxies.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', { waitUntil: 'networkidle2' });
+        await pageReportsProxies.waitForSelector('body');
+      });
     }
 
     for (let pageNewsProxies of this.pagesNewsProxies) {
-      tasks.push(pageNewsProxies.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', { waitUntil: 'domcontentloaded' }));
+      tasks.push(async () => {
+        await pageNewsProxies.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', { waitUntil: 'networkidle2' });
+        await pageNewsProxies.waitForSelector('body');
+      });
     }
 
     await Promise.all(tasks);
@@ -437,10 +445,8 @@ export default class Parser {
     //   console.log(e);
     // }
 
-    await this.downloadAndExtractFile('https://www.e-disclosure.ru/portal/FileLoad.ashx?Fileid=1806841', './data/reports', 'test');
-
-    // this.scanningNews();
-    // this.scanningReports();
+    this.scanningNews();
+    this.scanningReports();
 
     
   }
