@@ -403,7 +403,7 @@ export default class Parser {
               '--no-zygote'
 
             ],
-            protocolTimeout: 120000,
+            protocolTimeout: 360000,
             timeout: 60000,
             // headless: true,
             headless: 'new',
