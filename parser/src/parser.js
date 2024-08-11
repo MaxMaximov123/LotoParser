@@ -47,8 +47,6 @@ export default class Parser {
 
   async downloadAndExtractFile(url, outputDir, newFileNameWithoutExt) {
     try {
-
-      console.log('Saving', url);
       if (!fs.existsSync(outputDir)) {
           fs.mkdirSync(outputDir, { recursive: true });
       }
@@ -272,8 +270,7 @@ export default class Parser {
 
           this.newNews.push(newsToPost);
           this.historyNews.push(hashOfData);
-          
-          console.log(newsToPost);
+        
         }
       }
 
@@ -300,10 +297,11 @@ export default class Parser {
 
       let hashOfData = MD5(JSON.stringify(row)).toString();
       if (!this.historyReports.includes(hashOfData)) {
-        tasksOfSavingReports.push(async () => {
+        let url = row['Файл'];
+        tasksOfSavingReports.push((async () => {
           await this.waitForTimeout(Math.floor((1 + Math.random()) * 1000));
-          await this.downloadAndExtractFile(row['Файл'], './data/reports', MD5(row['Файл']).toString())
-        });
+          await this.downloadAndExtractFile(url, './data/reports', MD5(row['Файл']).toString())
+        })());
 
         row['Файл'] = `${__dirname}/data/reports/${MD5(row['Файл']).toString()}`;
 
@@ -317,11 +315,12 @@ export default class Parser {
   }
 
   async saveReportForCompanyName(companyName) {
-    let tasksOfTypes = this.tickers[companyName].types.map(async (type) => {
-      await this.waitForTimeout(Math.floor((1 + Math.random()) * 1000));
-      await this.saveReportForType(type, companyName)
-    }
-    );
+    let tasksOfTypes = this.tickers[companyName].types.map(
+      type => (async (type) => {
+        await this.waitForTimeout(Math.floor((1 + Math.random()) * 1000));
+        await this.saveReportForType(type, companyName);
+      })(type)
+      );
     await Promise.all(tasksOfTypes);
     console.log(companyName, 'saved!');
   }
@@ -357,16 +356,6 @@ export default class Parser {
     for (let subtitle of subtitlesFile) {
       this.subtitles[subtitle.subtitle] = subtitle;
     }
-
-    // this.browser = await puppeteer.launch(
-    //   {
-    //     args: ['--no-sandbox'],
-    //     headless: 'new',
-    //     headless: false
-    //   }
-    // );
-    // this.webPageNews = await this.browser.newPage();
-    // this.webPageReport = await this.browser.newPage();
     
     this.proxies = await Promise.all(
       JSON.parse(fs.readFileSync('./data/proxies.json', 'utf8')).map(
@@ -434,19 +423,7 @@ export default class Parser {
 
     await Promise.all(tasks);
 
-    // try {
-    //   for (let page of this.pagesReportsProxies) {
-    //     let ip = await page.evaluate(async (url) => {
-    //       return await (await fetch(url)).text();
-    //     }, 'https://ipinfo.io/ip');
-
-    //     console.log((await (await fetch(`https://ipinfo.io/widget/demo/${ip}`)).json())?.data?.city)
-    //   }
-    // } catch(e) {
-    //   console.log(e);
-    // }
-
-    this.scanningNews();
+    // this.scanningNews();
     this.scanningReports();
 
     
