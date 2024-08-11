@@ -278,13 +278,11 @@ export default class Parser {
           // post req
 
           this.newNews.push(newsToPost);
+          fs.writeFileSync('./data/newNews.json', JSON.stringify(this.newNews, null, 2));
           this.historyNews.push(hashOfData);
         
         }
       }
-
-      console.log(this.newNews);
-      fs.writeFileSync('./data/newNews.json', JSON.stringify(this.newNews, null, 2));
       fs.writeFileSync('./data/historyNews.json', JSON.stringify(this.historyNews, null, 2));
 
       await this.waitForTimeout(1000 * 60 * 5);
@@ -323,6 +321,7 @@ export default class Parser {
 
         // post request!!!!!!!
         this.newReports.push(row);
+        fs.writeFileSync('./data/newReports.json', JSON.stringify(this.newReports, null, 2));
         this.historyReports.push(hashOfData);
       }
     }
@@ -345,7 +344,6 @@ export default class Parser {
       }
 
       fs.writeFileSync('./data/historyReports.json', JSON.stringify(this.historyReports, null, 2));
-      fs.writeFileSync('./data/newReports.json', JSON.stringify(this.newReports, null, 2));
       await this.waitForTimeout(60 * 1000 * 5);
     }
   }
