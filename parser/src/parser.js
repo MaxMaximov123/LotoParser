@@ -305,6 +305,11 @@ export default class Parser {
           await this.downloadAndExtractFile(url, './data/reports', MD5(row['Файл']).toString())
         })());
 
+        if (tasksOfSavingReports.length >= 10) {
+          await Promise.all(tasksOfSavingReports);
+          tasksOfSavingReports = [];
+        }
+
         row['Файл'] = `${__dirname}/data/reports/${MD5(row['Файл']).toString()}`;
 
         // post request!!!!!!!
@@ -329,7 +334,15 @@ export default class Parser {
 
   async scanningReports() {
     while (true) {
-      let tasksOfCompaniesNames = Object.keys(this.tickers).map(companyName => this.saveReportForCompanyName(companyName));
+      let tasksOfCompaniesNames = [];
+      for (let companyName of Object.keys(this.tickers)) {
+        tasksOfCompaniesNames.push(this.saveReportForCompanyName(companyName));
+
+        if (tasksOfCompaniesNames.length >= 10) {
+          await Promise.all(tasksOfCompaniesNames);
+          tasksOfCompaniesNames = [];
+        }
+      }
       await Promise.all(tasksOfCompaniesNames);
 
       fs.writeFileSync('./data/historyReports.json', JSON.stringify(this.historyReports, null, 2));
