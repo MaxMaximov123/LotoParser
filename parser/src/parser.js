@@ -316,7 +316,7 @@ export default class Parser {
 
       let url = row['Файл'];
 
-      this.controlSavingFiles(this.downloadAndExtractFile(url, './data/reports', MD5(row['Файл']).toString()));
+      this.controlSavingFiles(url, './data/reports', MD5(row['Файл']).toString());
 
       row['Файл'] = `${__dirname}/data/reports/${MD5(row['Файл']).toString()}`;
 
