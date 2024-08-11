@@ -47,41 +47,46 @@ export default class Parser {
 
   async downloadAndExtractFile(url, outputDir, newFileNameWithoutExt) {
     try {
-        if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir);
-        }
+      if (!fs.existsSync(outputDir)) {
+          fs.mkdirSync(outputDir, { recursive: true });
+      }
 
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`Ошибка загрузки: ${response.statusText}`);
-        }
-        const buffer = await response.buffer();
+      let randomIndexPage = Math.floor(Math.random() * this.pagesReportsProxies.length);
+      let page = this.pagesReportsProxies[randomIndexPage];
 
-        const zipPath = path.join(outputDir, 'temp.zip');
-        fs.writeFileSync(zipPath, buffer);
+      const response = await page.evaluate(async (url) => {
+          const res = await fetch(url, { timeout: 60000 });
+          const buffer = await res.arrayBuffer(); // возвращаемый массив байтов
+          return Array.from(new Uint8Array(buffer)); // преобразуем в массив чисел
+      }, url);
 
-        const zip = new AdmZip(zipPath);
-        const zipEntries = zip.getEntries();
+      const buffer = Buffer.from(response);
 
-        if (zipEntries.length !== 1) {
-            throw new Error('Ожидался один файл в архиве');
-        }
+      const zipPath = path.join(outputDir, 'temp.zip');
+      fs.writeFileSync(zipPath, buffer);
 
-        const zipEntry = zipEntries[0];
-        const originalFileName = zipEntry.entryName;
-        const fileExtension = path.extname(originalFileName);  // Получаем расширение файла
+      const zip = new AdmZip(zipPath);
+      const zipEntries = zip.getEntries();
 
-        const sanitizedFileName = this.sanitizeFileName(newFileNameWithoutExt) + fileExtension;  // Добавляем расширение к новому имени
-        const extractedFilePath = path.join(outputDir, sanitizedFileName);
+      if (zipEntries.length !== 1) {
+          throw new Error('Ожидался один файл в архиве');
+      }
 
-        fs.writeFileSync(extractedFilePath, zipEntry.getData());
-        console.log(`Файл сохранен: ${extractedFilePath}`);
+      const zipEntry = zipEntries[0];
+      const originalFileName = zipEntry.entryName;
+      const fileExtension = path.extname(originalFileName);
 
-        fs.unlinkSync(zipPath);
-    } catch (error) {
-        console.error('Ошибка:', error.message);
-    }
-};
+      const sanitizedFileName = this.sanitizeFileName(newFileNameWithoutExt) + fileExtension;
+      const extractedFilePath = path.join(outputDir, sanitizedFileName);
+
+      fs.writeFileSync(extractedFilePath, zipEntry.getData());
+      console.log(`Файл сохранен: ${extractedFilePath}`);
+
+      fs.unlinkSync(zipPath);
+  } catch (error) {
+      console.error('Ошибка:', error.message);
+  }
+  };
 
   async fetchReportTableData(url) {
     try {
@@ -275,7 +280,7 @@ export default class Parser {
 
       fs.writeFileSync('./data/historyNews.json', JSON.stringify(this.historyNews, null, 2));
 
-      await this.waitForTimeout(1000 * 30);
+      await this.waitForTimeout(1000 * 60);
     }
   }
 
@@ -294,7 +299,10 @@ export default class Parser {
 
       let hashOfData = MD5(JSON.stringify(row)).toString();
       if (!this.historyReports.includes(hashOfData)) {
-        tasksOfSavingReports.push(this.downloadAndExtractFile(row['Файл'], './data/reports', MD5(row['Файл']).toString()));
+        tasksOfSavingReports.push(async () => {
+          await this.waitForTimeout(Math.floor((1 + Math.random()) * 1000));
+          await this.downloadAndExtractFile(row['Файл'], './data/reports', MD5(row['Файл']).toString())
+        });
 
         row['Файл'] = `${__dirname}/data/reports/${MD5(row['Файл']).toString()}`;
 
@@ -308,7 +316,11 @@ export default class Parser {
   }
 
   async saveReportForCompanyName(companyName) {
-    let tasksOfTypes = this.tickers[companyName].types.map(type => this.saveReportForType(type, companyName));
+    let tasksOfTypes = this.tickers[companyName].types.map(async type => {
+      await this.waitForTimeout(Math.floor((1 + Math.random()) * 1000));
+      await this.saveReportForType(type, companyName)
+    }
+    );
     await Promise.all(tasksOfTypes);
     console.log(companyName, 'saved!');
   }
@@ -323,7 +335,7 @@ export default class Parser {
       fs.writeFileSync('./data/historyReports.json', JSON.stringify(this.historyReports, null, 2));
 
       fs.writeFileSync('./data/newReports.json', JSON.stringify(this.newReports, null, 2));
-      await this.waitForTimeout(30 * 1000);
+      await this.waitForTimeout(60 * 1000);
     }
   }
 
@@ -396,11 +408,11 @@ export default class Parser {
     let tasks = [];
 
     for (let pageReportsProxies of this.pagesReportsProxies) {
-      tasks.push(pageReportsProxies.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', { waitUntil: 'networkidle2' }));
+      tasks.push(pageReportsProxies.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', { waitUntil: 'domcontentloaded' }));
     }
 
     for (let pageNewsProxies of this.pagesNewsProxies) {
-      tasks.push(pageNewsProxies.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', { waitUntil: 'networkidle2' }));
+      tasks.push(pageNewsProxies.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', { waitUntil: 'domcontentloaded' }));
     }
 
     await Promise.all(tasks);
@@ -417,8 +429,10 @@ export default class Parser {
     //   console.log(e);
     // }
 
-    this.scanningNews();
-    this.scanningReports();
+    await this.downloadAndExtractFile('https://www.e-disclosure.ru/portal/FileLoad.ashx?Fileid=1806841', './data/reports', 'test');
+
+    // this.scanningNews();
+    // this.scanningReports();
 
     
   }
