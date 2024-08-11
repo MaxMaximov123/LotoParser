@@ -305,7 +305,7 @@ export default class Parser {
           await this.downloadAndExtractFile(url, './data/reports', MD5(row['Файл']).toString())
         })());
 
-        if (tasksOfSavingReports.length >= 2) {
+        if (tasksOfSavingReports.length >= 3) {
           await Promise.all(tasksOfSavingReports);
           tasksOfSavingReports = [];
         }
@@ -323,12 +323,11 @@ export default class Parser {
 
   async saveReportForCompanyName(companyName) {
     let tasksOfTypes = this.tickers[companyName].types.map(
-      type => (async (type) => {
+      type => await (async (type) => {
         await this.waitForTimeout(Math.floor((1 + Math.random()) * 5000));
         await this.saveReportForType(type, companyName);
       })(type)
       );
-    await Promise.all(tasksOfTypes);
     console.log(companyName, 'saved!');
   }
 
