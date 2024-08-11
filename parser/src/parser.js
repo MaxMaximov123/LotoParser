@@ -312,7 +312,7 @@ export default class Parser {
           await this.downloadAndExtractFile(url, './data/reports', MD5(row['Файл']).toString())
         })());
 
-        if (tasksOfSavingReports.length >= 3) {
+        if (tasksOfSavingReports.length >= 2) {
           await Promise.all(tasksOfSavingReports);
           tasksOfSavingReports = [];
         }
