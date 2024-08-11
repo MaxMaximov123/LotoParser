@@ -322,12 +322,10 @@ export default class Parser {
   }
 
   async saveReportForCompanyName(companyName) {
-    let tasksOfTypes = this.tickers[companyName].types.map(
-      type => await (async (type) => {
-        await this.waitForTimeout(Math.floor((1 + Math.random()) * 5000));
-        await this.saveReportForType(type, companyName);
-      })(type)
-      );
+    for (let type of this.tickers[companyName].types) {
+      await this.saveReportForType(type, companyName);
+    }
+
     console.log(companyName, 'saved!');
   }
 
