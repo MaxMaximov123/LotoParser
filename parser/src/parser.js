@@ -209,7 +209,6 @@ export default class Parser {
 
   async scanningNews() {
     while (true) {
-      this.newNews = [];
       let finishDate = moment().format('DD.MM.YYYY');
       let startDate = moment();
       startDate.add(-1, 'M');
@@ -269,7 +268,7 @@ export default class Parser {
         let hashOfData = MD5(JSON.stringify(newsToPost)).toString();
         if (!this.historyNews.includes(hashOfData)) {
           // post req
-          
+
           this.newNews.push(newsToPost);
           this.historyNews.push(hashOfData);
         }
@@ -326,7 +325,6 @@ export default class Parser {
 
   async scanningReports() {
     while (true) {
-      this.newReports = [];
       let tasksOfCompaniesNames = Object.keys(this.tickers).map(companyName => this.saveReportForCompanyName(companyName));
       await Promise.all(tasksOfCompaniesNames);
 
@@ -338,6 +336,8 @@ export default class Parser {
   }
 
   async start() {
+    this.newNews = [];
+    this.newReports = [];
     this.historyNews = JSON.parse(fs.readFileSync('./data/historyNews.json', 'utf8'));
     this.historyReports = JSON.parse(fs.readFileSync('./data/historyReports.json', 'utf8'));
 
