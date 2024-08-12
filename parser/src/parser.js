@@ -15,6 +15,7 @@ import { URL } from 'url';
 import { fileURLToPath } from 'url';
 import HttpsProxyAgent from 'https-proxy-agent';
 import ProxyChain from 'proxy-chain';
+import UserAgent from 'user-agents';
 
 const __dirname = dirname(fileURLToPath(import.meta.url + '/..'));
 const __filename = fileURLToPath(import.meta.url);
@@ -58,8 +59,8 @@ export default class Parser {
         return;
       }
 
-      let randomIndexPage = Math.floor(Math.random() * this.pagesReportsProxies.length);
-      let page = this.pagesReportsProxies[randomIndexPage];
+      let randomIndexPage = Math.floor(Math.random() * Object.values(this.pagesReportsProxies).length);
+      let page = Object.values(this.pagesReportsProxies)[randomIndexPage];
 
       const response = await page.evaluate(async (url) => {
           const res = await fetch(url, { timeout: 60000 });
@@ -160,8 +161,8 @@ export default class Parser {
   }
 
   async postFromSite(url, data) {
-    let randomIndexPage = Math.floor(Math.random() * this.pagesNewsProxies.length);
-    let page = this.pagesReportsProxies[randomIndexPage];
+    let randomIndexPage = Math.floor(Math.random() * Object.values(this.pagesNewsProxies).length);
+    let page = Object.values(this.pagesReportsProxies)[randomIndexPage];
 
     let result = await page.evaluate(async (url, data) => {
       return await (await fetch(url, {
@@ -204,8 +205,8 @@ export default class Parser {
   }
 
   async getFromSite(url) {
-    let randomIndexPage = Math.floor(Math.random() * this.pagesReportsProxies.length);
-    let page = this.pagesReportsProxies[randomIndexPage];
+    let randomIndexPage = Math.floor(Math.random() * Object.values(this.pagesReportsProxies).length);
+    let page = Object.values(this.pagesReportsProxies)[randomIndexPage];
 
     let result = await page.evaluate(async (url) => {
       return await (await fetch(url)).text();
@@ -379,65 +380,81 @@ export default class Parser {
     console.log(this.proxies);
 
     this.browsersProxies = [];
-    this.pagesReportsProxies = [];
-    this.pagesNewsProxies = [];
+    this.pagesReportsProxies = {};
+    this.pagesNewsProxies = {};
 
-    let tasksPagesNewsProxies = [];
-    let tasksPagesReportsProxies = [];
-    
     for (let proxy of this.proxies) {
-      this.browsersProxies.push(
-        await puppeteer.launch(
-          {
-            args: [
-              `--proxy-server=${proxy}`,
-              '--ignore-certificate-errors',
-              '--disable-web-security',
-              '--no-sandbox',
-              '--disable-setuid-sandbox',
-              '--disable-dev-shm-usage',
-              '--disable-gpu',
-              '--disable-software-rasterizer',
-              '--single-process',
-              '--no-zygote'
+      let browser;
+      try {
+        browser = await puppeteer.launch({
+          args: [
+            `--proxy-server=${proxy}`,
+            '--ignore-certificate-errors',
+            '--disable-web-security',
+            // '--disable-setuid-sandbox',
+            // '--disable-dev-shm-usage',
+            // '--disable-gpu',
+            // '--disable-software-rasterizer',
+            // '--single-process',
+            // '--no-zygote',
+            // '--disable-extensions',
+            '--no-sandbox'
 
-            ],
-            protocolTimeout: 360000,
-            timeout: 60000,
-            // headless: true,
-            headless: 'new',
-            // headless: false
+          ],
+          protocolTimeout: 360000,
+          timeout: 60000,
+          // headless: false,
+          headless: 'new'
+        });
+
+        this.browsersProxies.push(this.browsersProxies);
+    
+        console.log(`Browser with proxy ${proxy} is launching...`);
+    
+        let pageNews = (await browser.pages())[0];
+        this.pagesNewsProxies[proxy] = pageNews;
+
+        pageNews.on('response', async (response) => {
+          let url = response.url();
+          
+          if (url.startsWith('https://www.e-disclosure.ru/xpvnsulc')) {
+            console.log('ermoved news', proxy);
+            delete this.pagesNewsProxies[proxy];
           }
-        )
-      );
-      
-      this.pagesReportsProxies.push(await this.browsersProxies.at(-1).newPage());
-      await this.pagesReportsProxies.at(-1).goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', { waitUntil: 'networkidle0' });
-      await this.pagesReportsProxies.at(-1).waitForSelector('body');
+        });
 
-      this.pagesNewsProxies.push(this.browsersProxies.at(-1).newPage());
-      await this.pagesNewsProxies.at(-1).goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', { waitUntil: 'networkidle0' });
-      await this.pagesNewsProxies.at(-1).waitForSelector('body');
+        await pageNews.setUserAgent(new UserAgent().toString());
+        await pageNews.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam');
+    
+    
+        let pageReport = await browser.newPage();
+        this.pagesReportsProxies[proxy] = pageReport;
+
+        pageReport.on('response', async (response) => {
+          let url = response.url();
+          
+          if (url.startsWith('https://www.e-disclosure.ru/xpvnsulc')) {
+            console.log('ermoved report', proxy);
+            delete this.pagesReportsProxies[proxy];
+          }
+        });
+
+        await pageReport.setUserAgent(new UserAgent().toString());
+        await pageReport.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5');
+    
+        console.log(`Browser with proxy ${proxy} is ready!`);
+    
+      } catch (error) {
+        console.error(`Error with browser ${proxy}:`, error);
+      }
     }
 
-    // this.pagesReportsProxies = await Promise.all(tasksPagesReportsProxies);
-    // this.pagesNewsProxies = await Promise.all(tasksPagesNewsProxies);
+    await this.waitForTimeout(1000 * 30);
 
-    // let tasks = [];
+    console.log(this.pagesNewsProxies);
+    console.log(this.pagesReportsProxies);
 
-    // for (let pageReportsProxies of this.pagesReportsProxies) {
-    //   await pageReportsProxies.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', { waitUntil: 'networkidle0' });
-    //   await pageReportsProxies.waitForSelector('body');
-    // }
-
-    // for (let pageNewsProxies of this.pagesNewsProxies) {
-    //   await pageNewsProxies.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', { waitUntil: 'networkidle0' });
-    //   await pageNewsProxies.waitForSelector('body');
-    // }
-
-    // await Promise.all(tasks);
-
-    await this.waitForTimeout(1000 * 10);
+    console.log('Start parsing');
 
     this.scanningNews();
     this.scanningReports();
