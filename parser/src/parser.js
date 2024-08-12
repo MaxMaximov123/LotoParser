@@ -46,6 +46,30 @@ export default class Parser {
       .trim();
   }
 
+  postRequest(url, data) {
+    return new Promise((resolve, reject) => {
+    const options = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+        },
+        body: JSON.stringify(data)
+    };
+    
+    fetch(url, options)
+    .then(response => response.json())
+    .then(result => {
+        resolve(result);
+    })
+    .catch(error => {
+        reject(error);
+    });
+    })
+  }
+
   async downloadAndExtractFile(url, outputDir, newFileNameWithoutExt) {
     try {
       if (!fs.existsSync(outputDir)) {
@@ -279,6 +303,7 @@ export default class Parser {
           // post req
 
           this.newNews.push(newsToPost);
+          await this.postRequest('http://92.53.124.200:5000/api/edisclosure_news', newsToPost);
           fs.writeFileSync('./data/newNews.json', JSON.stringify(this.newNews, null, 2));
           this.historyNews.push(hashOfData);
         
@@ -325,6 +350,7 @@ export default class Parser {
 
         // post request!!!!!!!
         this.newReports.push(row);
+        await this.postRequest('http://92.53.124.200:5000/api/edisclosure_reports', row);
         fs.writeFileSync('./data/newReports.json', JSON.stringify(this.newReports, null, 2));
         this.historyReports.push(hashOfData);
       }
@@ -418,7 +444,7 @@ export default class Parser {
           let url = response.url();
           
           if (url.startsWith('https://www.e-disclosure.ru/xpvnsulc')) {
-            console.log('ermoved news', proxy);
+            console.log('removed news', proxy);
             delete this.pagesNewsProxies[proxy];
           }
         });
@@ -434,7 +460,7 @@ export default class Parser {
           let url = response.url();
           
           if (url.startsWith('https://www.e-disclosure.ru/xpvnsulc')) {
-            console.log('ermoved report', proxy);
+            console.log('removed report', proxy);
             delete this.pagesReportsProxies[proxy];
           }
         });
