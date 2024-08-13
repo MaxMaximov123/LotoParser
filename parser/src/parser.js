@@ -403,7 +403,6 @@ export default class Parser {
   }
 
   async build() {
-    this.restartSycles += 1;
     console.log(`Cycle #${this.restartSycles}`);
     this.tasksOfSavingReportsFiles = [];
     this.newNews = [];
@@ -457,8 +456,8 @@ export default class Parser {
           ],
           protocolTimeout: 360000,
           timeout: 60000,
-          headless: false,
-          // headless: 'new'
+          // headless: false,
+          headless: 'new'
         });
 
         this.browsersProxies[proxy] = browser;
@@ -509,7 +508,7 @@ export default class Parser {
           'sec-ch-ua-platform': '"macOS"',
       });
         await pageNews.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', {waitUntil: 'networkidle2', timeout: 0});
-        await this.waitForTimeout(5000);
+        await this.waitForTimeout(1000);
     
     
         let pageReport = await browser.newPage();
@@ -584,12 +583,15 @@ export default class Parser {
 
     console.log(await this.postFromSite(
       'https://www.e-disclosure.ru/api/search/sevents',
-      `eventTypeTerm=&radView=0&dateStart=${startDate}&dateFinish=${finishDate}&textfieldEvent=&radReg=FederalDistricts&districtsCheckboxGroup=-1&regionsCheckboxGroup=-1&branchesCheckboxGroup=-1&textfieldCompany=&lastPageSize=10&lastPageNumber=1&query=&queryEvent=`
+      `eventTypeTerm=&radView=0&dateStart=14.07.2024&dateFinish=14.08.2024&textfieldEvent=&radReg=FederalDistricts&districtsCheckboxGroup=-1&regionsCheckboxGroup=-1&branchesCheckboxGroup=-1&textfieldCompany=&lastPageSize=10&lastPageNumber=1&query=&queryEvent=`
     ))
-
-    this.scanningNews(this.restartSycles);
-    this.scanningReports(this.restartSycles);
-
     
+    if (Object.keys(this.pagesNewsProxies).length + Object.keys(this.pagesReportsProxies).length >= 2) {
+      this.restartSycles += 1;
+      this.scanningNews(this.restartSycles);
+      this.scanningReports(this.restartSycles);
+    } else {
+      this.build();
+    }
   }
 }
