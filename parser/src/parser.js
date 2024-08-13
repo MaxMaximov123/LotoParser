@@ -359,7 +359,7 @@ export default class Parser {
         // post request!!!!!!!
         this.newReports.push(row);
 
-        if (!this.isFirstIteration) {
+        if (!this.isFirstIterationReports) {
           await this.postRequest('http://92.53.124.200:5000/api/edisclosure_reports', row);
           console.log("Post reports sended");
         }
@@ -394,6 +394,8 @@ export default class Parser {
   }
 
   async start() {
+    this.isFirstIterationNews = true;
+    this.isFirstIterationReports = true;
     while (true) {
       await this.build();
       await this.waitForTimeout(1000 * 60 * 60 * 3);
@@ -408,8 +410,6 @@ export default class Parser {
     this.newReports = [];
     this.historyNews = JSON.parse(fs.readFileSync('./data/historyNews.json', 'utf8'));
     this.historyReports = JSON.parse(fs.readFileSync('./data/historyReports.json', 'utf8'));
-    this.isFirstIterationNews = true;
-    this.isFirstIterationReports = true;
 
     let tickersFile = JSON.parse(fs.readFileSync('./data/tickers.json', 'utf8'));
     this.tickers = {};
