@@ -491,6 +491,10 @@ export default class Parser {
           if (url.startsWith('https://www.e-disclosure.ru/xpvnsulc')) {
             console.log('removed news', proxy);
             delete this.pagesNewsProxies[proxy];
+            if ((!this.pagesReportsProxies[proxy]) && (!this.pagesNewsProxies[proxy]) && this.browsersProxies[proxy]) {
+              await this.browsersProxies[proxy].close();
+              delete this.browsersProxies[proxy];
+            }
           }
         });
 
@@ -538,6 +542,10 @@ export default class Parser {
           if (url.startsWith('https://www.e-disclosure.ru/xpvnsulc')) {
             console.log('removed report', proxy);
             delete this.pagesReportsProxies[proxy];
+            if ((!this.pagesReportsProxies[proxy]) && (!this.pagesNewsProxies[proxy]) && this.browsersProxies[proxy]) {
+              await this.browsersProxies[proxy].close();
+              delete this.browsersProxies[proxy];
+            }
           }
         });
 
