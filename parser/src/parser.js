@@ -26,6 +26,7 @@ export default class Parser {
   page = null;
   totalHeight = 0;
   isScanning = true;
+  restartSycles = 0;
 
   constructor({ restartTime }) {
     this.restartTime = restartTime;
@@ -239,8 +240,11 @@ export default class Parser {
     return result;
   }
 
-  async scanningNews() {
+  async scanningNews(restartSycles) {
     while (true) {
+      if (restartSycles !== this.restartSycles) {
+        return;
+      }
       let finishDate = moment().format('DD.MM.YYYY');
       let startDate = moment();
       startDate.add(-1, 'M');
@@ -376,6 +380,10 @@ export default class Parser {
 
   async scanningReports() {
     while (true) {
+      if (restartSycles !== this.restartSycles) {
+        return;
+      }
+
       for (let companyName of Object.keys(this.tickers)) {
         await this.saveReportForCompanyName(companyName);
       }
@@ -386,6 +394,15 @@ export default class Parser {
   }
 
   async start() {
+    while (true) {
+      await this.build();
+      await this.waitForTimeout(1000 * 60 * 60 * 3);
+    }
+  }
+
+  async build() {
+    this.restartSycles += 1;
+    console.log(`Cycle #${this.restartSycles}`);
     this.tasksOfSavingReportsFiles = [];
     this.newNews = [];
     this.newReports = [];
@@ -558,8 +575,8 @@ export default class Parser {
 
     console.log('Start parsing');
 
-    this.scanningNews();
-    this.scanningReports();
+    this.scanningNews(this.restartSycles);
+    this.scanningReports(this.restartSycles);
 
     
   }
