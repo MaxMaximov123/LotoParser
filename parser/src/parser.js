@@ -398,7 +398,7 @@ export default class Parser {
     this.isFirstIterationReports = true;
     while (true) {
       await this.build();
-      await this.waitForTimeout(1000 * 60 * 60 * 3);
+      await this.waitForTimeout(1000 * 60 * 30);
     }
   }
 
