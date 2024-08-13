@@ -450,6 +450,25 @@ export default class Parser {
     
         let pageNews = (await browser.pages())[0];
         this.pagesNewsProxies[proxy] = pageNews;
+        await pageNews.mouse.move(100, 100);
+
+        await pageNews.setExtraHTTPHeaders({
+          'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Referer': 'https://www.example.com',
+          'DNT': '1',
+        });
+
+        await pageNews.evaluateOnNewDocument(() => {
+          Object.defineProperty(navigator, 'plugins', {
+            get: () => [1, 2, 3, 4, 5], // фейковые плагины
+          });
+          Object.defineProperty(navigator, 'languages', {
+            get: () => ['en-US', 'ru-RU'],
+          });
+          Object.defineProperty(navigator, 'webdriver', {
+            get: () => false,
+          });
+        });
 
         pageNews.on('response', async (response) => {
           let url = response.url();
@@ -461,11 +480,42 @@ export default class Parser {
         });
 
         await pageNews.setUserAgent(new UserAgent().toString());
-        await pageNews.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam');
+        await pageNews.setExtraHTTPHeaders({
+          'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Connection': 'keep-alive',
+          'Upgrade-Insecure-Requests': '1',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'same-origin',
+          'Sec-Fetch-User': '?1',
+          'sec-ch-ua': '"Chromium";v="124", "YaBrowser";v="24.6", "Not-A.Brand";v="99", "Yowser";v="2.5"',
+          'sec-ch-ua-mobile': '?0',
+          'sec-ch-ua-platform': '"macOS"',
+      });
+        await pageNews.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', {waitUntil: 'networkidle2'});
     
     
         let pageReport = await browser.newPage();
         this.pagesReportsProxies[proxy] = pageReport;
+
+        await pageReport.setExtraHTTPHeaders({
+          'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Referer': 'https://www.example.com',
+          'DNT': '1',
+      });
+
+        await pageReport.evaluateOnNewDocument(() => {
+          Object.defineProperty(navigator, 'plugins', {
+            get: () => [1, 2, 3, 4, 5], // фейковые плагины
+          });
+          Object.defineProperty(navigator, 'languages', {
+            get: () => ['en-US', 'ru-RU'],
+          });
+          Object.defineProperty(navigator, 'webdriver', {
+            get: () => false,
+          });
+        });
 
         pageReport.on('response', async (response) => {
           let url = response.url();
@@ -476,8 +526,23 @@ export default class Parser {
           }
         });
 
+        await pageReport.mouse.move(100, 100);
+
         await pageReport.setUserAgent(new UserAgent().toString());
-        await pageReport.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5');
+        await pageReport.setExtraHTTPHeaders({
+          'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Connection': 'keep-alive',
+          'Upgrade-Insecure-Requests': '1',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'same-origin',
+          'Sec-Fetch-User': '?1',
+          'sec-ch-ua': '"Chromium";v="124", "YaBrowser";v="24.6", "Not-A.Brand";v="99", "Yowser";v="2.5"',
+          'sec-ch-ua-mobile': '?0',
+          'sec-ch-ua-platform': '"macOS"',
+      });
+        await pageReport.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', {waitUntil: 'networkidle2'});
     
         console.log(`Browser with proxy ${proxy} is ready!`);
     
