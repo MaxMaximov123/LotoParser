@@ -463,8 +463,6 @@ export default class Parser {
 
         this.browsersProxies.push(this.browsersProxies);
     
-        console.log(`Browser with proxy ${proxy} is launching...`);
-    
         let pageNews = (await browser.pages())[0];
         this.pagesNewsProxies[proxy] = pageNews;
         await pageNews.mouse.move(100, 100);
@@ -510,7 +508,7 @@ export default class Parser {
           'sec-ch-ua-mobile': '?0',
           'sec-ch-ua-platform': '"macOS"',
       });
-        await pageNews.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', {waitUntil: 'networkidle2'});
+        await pageNews.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', {waitUntil: 'networkidle2', timeout: 0});
     
     
         let pageReport = await browser.newPage();
@@ -559,7 +557,7 @@ export default class Parser {
           'sec-ch-ua-mobile': '?0',
           'sec-ch-ua-platform': '"macOS"',
       });
-        await pageReport.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', {waitUntil: 'networkidle2'});
+        await pageReport.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', {waitUntil: 'networkidle2', timeout: 0});
     
         console.log(`Browser with proxy ${proxy} is ready!`);
     
