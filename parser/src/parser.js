@@ -445,8 +445,8 @@ export default class Parser {
             `--proxy-server=${proxy}`,
             '--ignore-certificate-errors',
             '--disable-web-security',
-            // '--disable-setuid-sandbox',
-            // '--disable-dev-shm-usage',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
             // '--disable-gpu',
             // '--disable-software-rasterizer',
             // '--single-process',
@@ -457,13 +457,13 @@ export default class Parser {
           ],
           protocolTimeout: 360000,
           timeout: 60000,
-          // headless: false,
-          headless: 'new'
+          headless: false,
+          // headless: 'new'
         });
 
         this.browsersProxies[proxy] = browser;
     
-        let pageNews = (await browser.pages())[0];
+        let pageNews = await browser.newPage();
         this.pagesNewsProxies[proxy] = pageNews;
         await pageNews.mouse.move(100, 100);
 
@@ -491,10 +491,6 @@ export default class Parser {
           if (url.startsWith('https://www.e-disclosure.ru/xpvnsulc')) {
             console.log('removed news', proxy);
             delete this.pagesNewsProxies[proxy];
-            if ((!this.pagesReportsProxies[proxy]) && (!this.pagesNewsProxies[proxy]) && this.browsersProxies[proxy]) {
-              await this.browsersProxies[proxy].close();
-              delete this.browsersProxies[proxy];
-            }
           }
         });
 
@@ -513,6 +509,7 @@ export default class Parser {
           'sec-ch-ua-platform': '"macOS"',
       });
         await pageNews.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', {waitUntil: 'networkidle2', timeout: 0});
+        await this.waitForTimeout(5000);
     
     
         let pageReport = await browser.newPage();
@@ -542,10 +539,6 @@ export default class Parser {
           if (url.startsWith('https://www.e-disclosure.ru/xpvnsulc')) {
             console.log('removed report', proxy);
             delete this.pagesReportsProxies[proxy];
-            if ((!this.pagesReportsProxies[proxy]) && (!this.pagesNewsProxies[proxy]) && this.browsersProxies[proxy]) {
-              await this.browsersProxies[proxy].close();
-              delete this.browsersProxies[proxy];
-            }
           }
         });
 
@@ -588,6 +581,11 @@ export default class Parser {
     console.log(`${Object.keys(this.pagesReportsProxies).length} pages reports available`);
 
     console.log('Start parsing');
+
+    console.log(await this.postFromSite(
+      'https://www.e-disclosure.ru/api/search/sevents',
+      `eventTypeTerm=&radView=0&dateStart=${startDate}&dateFinish=${finishDate}&textfieldEvent=&radReg=FederalDistricts&districtsCheckboxGroup=-1&regionsCheckboxGroup=-1&branchesCheckboxGroup=-1&textfieldCompany=&lastPageSize=10&lastPageNumber=1&query=&queryEvent=`
+    ))
 
     this.scanningNews(this.restartSycles);
     this.scanningReports(this.restartSycles);

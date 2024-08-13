@@ -28,6 +28,7 @@ ENV IS_HEADLESS=true
 ENV IS_DOCKERIZED=true
 
 
+
 COPY parser/ ./
 
 CMD ["npm", "run", "start"]
