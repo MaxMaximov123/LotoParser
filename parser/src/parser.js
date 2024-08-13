@@ -306,6 +306,7 @@ export default class Parser {
 
           if (!this.isFirstIterationNews) {
             await this.postRequest('http://92.53.124.200:5000/api/edisclosure_news', newsToPost);
+            console.log('Post news sended');
           }
           fs.writeFileSync('./data/newNews.json', JSON.stringify(this.newNews, null, 2));
           this.historyNews.push(hashOfData);
@@ -356,6 +357,7 @@ export default class Parser {
 
         if (!this.isFirstIteration) {
           await this.postRequest('http://92.53.124.200:5000/api/edisclosure_reports', row);
+          console.log("Post reports sended");
         }
         fs.writeFileSync('./data/newReports.json', JSON.stringify(this.newReports, null, 2));
         this.historyReports.push(hashOfData);
