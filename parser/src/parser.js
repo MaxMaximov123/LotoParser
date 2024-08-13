@@ -163,7 +163,7 @@ export default class Parser {
 
       return rows;
     } catch (error) {
-      console.error('Ошибка при получении данных:', error);
+      console.error('Ошибка при получении данных:');
       return [];
     }
   }
@@ -261,7 +261,7 @@ export default class Parser {
 
         responseData = responseData.foundEventsList;
       } catch (e) {
-        console.log('Error while getting POST', e)
+        console.log('Error while getting POST')
       }
 
       for (let news of responseData) {
@@ -378,7 +378,7 @@ export default class Parser {
     console.log(companyName, 'saved!');
   }
 
-  async scanningReports() {
+  async scanningReports(restartSycles) {
     while (true) {
       if (restartSycles !== this.restartSycles) {
         return;
@@ -433,7 +433,7 @@ export default class Parser {
 
     console.log(this.proxies);
 
-    this.browsersProxies = [];
+    this.browsersProxies = {};
     this.pagesReportsProxies = {};
     this.pagesNewsProxies = {};
 
@@ -461,7 +461,7 @@ export default class Parser {
           headless: 'new'
         });
 
-        this.browsersProxies.push(this.browsersProxies);
+        this.browsersProxies[proxy] = browser;
     
         let pageNews = (await browser.pages())[0];
         this.pagesNewsProxies[proxy] = pageNews;
@@ -568,8 +568,16 @@ export default class Parser {
 
     await this.waitForTimeout(1000 * 30);
 
-    console.log(this.pagesNewsProxies);
-    console.log(this.pagesReportsProxies);
+    for (let proxy of this.proxies) {
+      if ((!this.pagesReportsProxies[proxy]) && (!this.pagesNewsProxies[proxy]) && this.browsersProxies[proxy]) {
+        await this.browsersProxies[proxy].close();
+        delete this.browsersProxies[proxy];
+      }
+    }
+
+    console.log(`${Object.keys(this.browsersProxies).length} browsers available`);
+    console.log(`${Object.keys(this.pagesNewsProxies).length} pages news available`);
+    console.log(`${Object.keys(this.pagesReportsProxies).length} pages reports available`);
 
     console.log('Start parsing');
 
