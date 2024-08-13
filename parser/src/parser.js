@@ -303,15 +303,18 @@ export default class Parser {
           // post req
 
           this.newNews.push(newsToPost);
-          await this.postRequest('http://92.53.124.200:5000/api/edisclosure_news', newsToPost);
+
+          if (!this.isFirstIterationNews) {
+            await this.postRequest('http://92.53.124.200:5000/api/edisclosure_news', newsToPost);
+          }
           fs.writeFileSync('./data/newNews.json', JSON.stringify(this.newNews, null, 2));
           this.historyNews.push(hashOfData);
-        
+          fs.writeFileSync('./data/historyNews.json', JSON.stringify(this.historyNews, null, 2));
         }
       }
-      fs.writeFileSync('./data/historyNews.json', JSON.stringify(this.historyNews, null, 2));
 
-      await this.waitForTimeout(1000 * 60 * 5);
+      await this.waitForTimeout(1000 * 60);
+      this.isFirstIterationNews = false;
     }
   }
 
@@ -350,9 +353,13 @@ export default class Parser {
 
         // post request!!!!!!!
         this.newReports.push(row);
-        await this.postRequest('http://92.53.124.200:5000/api/edisclosure_reports', row);
+
+        if (!this.isFirstIteration) {
+          await this.postRequest('http://92.53.124.200:5000/api/edisclosure_reports', row);
+        }
         fs.writeFileSync('./data/newReports.json', JSON.stringify(this.newReports, null, 2));
         this.historyReports.push(hashOfData);
+        fs.writeFileSync('./data/historyReports.json', JSON.stringify(this.historyReports, null, 2));
       }
     }
   }
@@ -371,8 +378,8 @@ export default class Parser {
         await this.saveReportForCompanyName(companyName);
       }
 
-      fs.writeFileSync('./data/historyReports.json', JSON.stringify(this.historyReports, null, 2));
-      await this.waitForTimeout(60 * 1000 * 5);
+      await this.waitForTimeout(60 * 1000);
+      this.isFirstIterationReports = false;
     }
   }
 
@@ -382,6 +389,8 @@ export default class Parser {
     this.newReports = [];
     this.historyNews = JSON.parse(fs.readFileSync('./data/historyNews.json', 'utf8'));
     this.historyReports = JSON.parse(fs.readFileSync('./data/historyReports.json', 'utf8'));
+    this.isFirstIterationNews = true;
+    this.isFirstIterationReports = true;
 
     let tickersFile = JSON.parse(fs.readFileSync('./data/tickers.json', 'utf8'));
     this.tickers = {};
@@ -429,8 +438,8 @@ export default class Parser {
           ],
           protocolTimeout: 360000,
           timeout: 60000,
-          // headless: false,
-          headless: 'new'
+          headless: false,
+          // headless: 'new'
         });
 
         this.browsersProxies.push(this.browsersProxies);
