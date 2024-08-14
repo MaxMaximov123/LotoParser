@@ -340,7 +340,7 @@ export default class Parser {
     while (true) {
       if (this.tasksOfSavingReportsFiles) {
         let tasks = this.tasksOfSavingReportsFiles.slice(0, 3);
-        this.tasksOfSavingReportsFiles = this.tasksOfSavingReportsFiles.slice(5);
+        this.tasksOfSavingReportsFiles = this.tasksOfSavingReportsFiles.slice(10);
         await Promise.all(tasks.map(task => this.downloadAndExtractFile(...task)));
       }
       await this.waitForTimeout(2000);
