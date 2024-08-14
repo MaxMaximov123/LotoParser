@@ -454,8 +454,8 @@ export default class Parser {
             '--no-sandbox'
 
           ],
-          protocolTimeout: 360000,
-          timeout: 60000,
+          protocolTimeout: 480000,
+          timeout: 120000,
           // headless: false,
           headless: 'new'
         });
@@ -580,17 +580,13 @@ export default class Parser {
     console.log(`${Object.keys(this.pagesReportsProxies).length} pages reports available`);
 
     console.log('Start parsing');
-
-    console.log(await this.postFromSite(
-      'https://www.e-disclosure.ru/api/search/sevents',
-      `eventTypeTerm=&radView=0&dateStart=14.07.2024&dateFinish=14.08.2024&textfieldEvent=&radReg=FederalDistricts&districtsCheckboxGroup=-1&regionsCheckboxGroup=-1&branchesCheckboxGroup=-1&textfieldCompany=&lastPageSize=10&lastPageNumber=1&query=&queryEvent=`
-    ))
     
     if (Object.keys(this.pagesNewsProxies).length + Object.keys(this.pagesReportsProxies).length >= 2) {
       this.restartSycles += 1;
       this.scanningNews(this.restartSycles);
       this.scanningReports(this.restartSycles);
     } else {
+      await this.waitForTimeout(1000 * 60);
       this.build();
     }
   }
