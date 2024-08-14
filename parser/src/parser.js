@@ -163,7 +163,7 @@ export default class Parser {
 
       return rows;
     } catch (error) {
-      console.error('Ошибка при получении данных:');
+      console.error('Ошибка при получении данных:', error);
       return [];
     }
   }
@@ -261,7 +261,9 @@ export default class Parser {
 
         responseData = responseData.foundEventsList;
       } catch (e) {
-        console.log('Error while getting POST')
+        console.log('Error while getting POST', e);
+        await this.waitForTimeout(10000);
+        continue;
       }
 
       for (let news of responseData) {
