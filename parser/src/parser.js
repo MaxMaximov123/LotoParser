@@ -239,7 +239,7 @@ export default class Parser {
 
     return result;
   }
-  
+
 
   async scanningNews(restartSycles) {
     while (true) {
@@ -432,6 +432,7 @@ export default class Parser {
         async proxy => await ProxyChain.anonymizeProxy(proxy)
         )
     );
+    
 
     console.log(this.proxies);
 
