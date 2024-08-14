@@ -507,7 +507,7 @@ export default class Parser {
           'sec-ch-ua-mobile': '?0',
           'sec-ch-ua-platform': '"macOS"',
       });
-        await pageNews.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', {waitUntil: 'networkidle2', timeout: 0});
+        await pageNews.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', {waitUntil: 'networkidle2', timeout: 120000});
         await this.waitForTimeout(1000);
     
     
@@ -557,7 +557,7 @@ export default class Parser {
           'sec-ch-ua-mobile': '?0',
           'sec-ch-ua-platform': '"macOS"',
       });
-        await pageReport.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', {waitUntil: 'networkidle2', timeout: 0});
+        await pageReport.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', {waitUntil: 'networkidle2', timeout: 120000});
     
         console.log(`Browser with proxy ${proxy} is ready!`);
     
