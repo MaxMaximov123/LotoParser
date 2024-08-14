@@ -339,7 +339,7 @@ export default class Parser {
   async savingAllFiles() {
     while (true) {
       if (this.tasksOfSavingReportsFiles) {
-        let tasks = this.tasksOfSavingReportsFiles.slice(0, 3);
+        let tasks = this.tasksOfSavingReportsFiles.slice(0, 10);
         this.tasksOfSavingReportsFiles = this.tasksOfSavingReportsFiles.slice(10);
         await Promise.all(tasks.map(task => this.downloadAndExtractFile(...task)));
       }
@@ -414,8 +414,7 @@ export default class Parser {
     this.isFirstIterationReports = true;
     while (true) {
       await this.build();
-      break;
-      await this.waitForTimeout(1000 * 60 * 60 * 2);
+      await this.waitForTimeout(1000 * 60 * 60);
     }
   }
 
@@ -440,8 +439,9 @@ export default class Parser {
       this.subtitles[subtitle.subtitle] = subtitle;
     }
     
+    let originalProxies = JSON.parse(fs.readFileSync('./data/proxies.json', 'utf8'));
     this.proxies = await Promise.all(
-      JSON.parse(fs.readFileSync('./data/proxies.json', 'utf8')).map(
+      originalProxies.map(
         async proxy => await ProxyChain.anonymizeProxy(proxy)
         )
     );
@@ -452,8 +452,11 @@ export default class Parser {
     this.browsersProxies = {};
     this.pagesReportsProxies = {};
     this.pagesNewsProxies = {};
-
+    
+    let indProxy = 0;
     for (let proxy of this.proxies) {
+      let originalProxy = originalProxies[indProxy];
+      indProxy++;
       let browser;
       try {
         browser = await puppeteer.launch({
@@ -505,7 +508,7 @@ export default class Parser {
           let url = response.url();
           
           if (url.startsWith('https://www.e-disclosure.ru/xpvnsulc')) {
-            console.log('removed news', proxy);
+            console.log('removed news', originalProxy);
             delete this.pagesNewsProxies[proxy];
           }
         });
@@ -553,7 +556,7 @@ export default class Parser {
           let url = response.url();
           
           if (url.startsWith('https://www.e-disclosure.ru/xpvnsulc')) {
-            console.log('removed report', proxy);
+            console.log('removed report', originalProxy);
             delete this.pagesReportsProxies[proxy];
           }
         });
@@ -576,10 +579,10 @@ export default class Parser {
       });
         await pageReport.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', {waitUntil: 'networkidle2', timeout: 120000});
     
-        console.log(`Browser with proxy ${proxy} is ready!`);
+        console.log(`Browser with proxy ${originalProxy} is ready!`);
     
       } catch (error) {
-        console.error(`Error with browser ${proxy}:`, error);
+        console.error(`Error with browser ${originalProxy}:`, error);
       }
     }
 
