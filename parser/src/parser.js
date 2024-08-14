@@ -454,7 +454,7 @@ export default class Parser {
             '--no-sandbox'
 
           ],
-          protocolTimeout: 480000,
+          protocolTimeout: 120000,
           timeout: 120000,
           // headless: false,
           headless: 'new'
@@ -578,13 +578,12 @@ export default class Parser {
     console.log(`${Object.keys(this.browsersProxies).length} browsers available`);
     console.log(`${Object.keys(this.pagesNewsProxies).length} pages news available`);
     console.log(`${Object.keys(this.pagesReportsProxies).length} pages reports available`);
-
-    console.log('Start parsing');
     
     if (Object.keys(this.pagesNewsProxies).length + Object.keys(this.pagesReportsProxies).length >= 2) {
       this.restartSycles += 1;
       this.scanningNews(this.restartSycles);
       this.scanningReports(this.restartSycles);
+      console.log('Start parsing');
     } else {
       await this.waitForTimeout(1000 * 60);
       this.build();
