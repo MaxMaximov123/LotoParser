@@ -239,6 +239,7 @@ export default class Parser {
 
     return result;
   }
+  
 
   async scanningNews(restartSycles) {
     while (true) {
