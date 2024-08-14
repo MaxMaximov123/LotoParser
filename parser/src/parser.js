@@ -330,7 +330,7 @@ export default class Parser {
     await this.waitForTimeout(Math.floor((1 + Math.random()) * 5000));
     this.tasksOfSavingReportsFiles.push(this.downloadAndExtractFile(url, path, name));
 
-    if (this.tasksOfSavingReportsFiles.length >= 3) {
+    if (this.tasksOfSavingReportsFiles.length >= 2) {
       await Promise.all(this.tasksOfSavingReportsFiles);
       this.tasksOfSavingReportsFiles = [];
     }
