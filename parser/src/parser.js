@@ -408,18 +408,19 @@ export default class Parser {
   }
 
   async start() {
+    this.tasksOfSavingReportsFiles = [];
     this.savingAllFiles();
     this.isFirstIterationNews = true;
     this.isFirstIterationReports = true;
     while (true) {
       await this.build();
-      await this.waitForTimeout(1000 * 60 * 60);
+      break;
+      await this.waitForTimeout(1000 * 60 * 60 * 2);
     }
   }
 
   async build() {
     console.log(`Cycle #${this.restartSycles}`);
-    this.tasksOfSavingReportsFiles = [];
     this.newNews = [];
     this.newReports = [];
     this.historyNews = JSON.parse(fs.readFileSync('./data/historyNews.json', 'utf8'));
