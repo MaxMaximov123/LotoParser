@@ -91,7 +91,7 @@ export default class Parser {
           const res = await fetch(url, { timeout: 60000 });
           const buffer = await res.arrayBuffer(); // возвращаемый массив байтов
           return Array.from(new Uint8Array(buffer)); // преобразуем в массив чисел
-      }, url);
+      }, url, { timeout: 120000 });
 
       const buffer = Buffer.from(response);
 
@@ -197,7 +197,7 @@ export default class Parser {
         "body": data,
         "method": "POST"
       })).json();
-    }, url, data);
+    }, url, data, { timeout: 120000 });
 
     return result;
   }
@@ -228,14 +228,14 @@ export default class Parser {
 
     return result;
   }
-
+  
   async getFromSite(url) {
     let randomIndexPage = Math.floor(Math.random() * Object.values(this.pagesReportsProxies).length);
     let page = Object.values(this.pagesReportsProxies)[randomIndexPage];
 
     let result = await page.evaluate(async (url) => {
       return await (await fetch(url)).text();
-    }, url);
+    }, url, { timeout: 120000 });
 
     return result;
   }
@@ -456,7 +456,7 @@ export default class Parser {
             '--no-sandbox'
 
           ],
-          protocolTimeout: 120000,
+          protocolTimeout: 360000,
           timeout: 120000,
           // headless: false,
           headless: 'new'
