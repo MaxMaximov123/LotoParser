@@ -328,11 +328,22 @@ export default class Parser {
 
   async controlSavingFiles(url, path, name) {
     await this.waitForTimeout(Math.floor((1 + Math.random()) * 5000));
-    this.tasksOfSavingReportsFiles.push(this.downloadAndExtractFile(url, path, name));
+    this.tasksOfSavingReportsFiles.push([url, path, name]);
 
-    if (this.tasksOfSavingReportsFiles.length >= 2) {
-      await Promise.all(this.tasksOfSavingReportsFiles);
-      this.tasksOfSavingReportsFiles = [];
+    // if (this.tasksOfSavingReportsFiles.length >= 2) {
+    //   await Promise.all(this.tasksOfSavingReportsFiles);
+    //   this.tasksOfSavingReportsFiles = [];
+    // }
+  }
+
+  async savingAllFiles() {
+    while (true) {
+      if (this.tasksOfSavingReportsFiles) {
+        let tasks = this.tasksOfSavingReportsFiles.slice(0, 3);
+        this.tasksOfSavingReportsFiles = this.tasksOfSavingReportsFiles.slice(5);
+        await Promise.all(tasks.map(task => this.downloadAndExtractFile(...task)));
+      }
+      await this.waitForTimeout(2000);
     }
   }
 
@@ -397,11 +408,12 @@ export default class Parser {
   }
 
   async start() {
+    this.savingAllFiles();
     this.isFirstIterationNews = true;
     this.isFirstIterationReports = true;
     while (true) {
       await this.build();
-      await this.waitForTimeout(1000 * 60 * 30);
+      await this.waitForTimeout(1000 * 60 * 60);
     }
   }
 
