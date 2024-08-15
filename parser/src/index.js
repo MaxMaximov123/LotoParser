@@ -2,9 +2,15 @@ import config from './config.js';
 import Parser from './parser.js';
 
 let parser;
+let a = 10;
 
 async function main() {
 	parser = new Parser({ restartTime: config.restartTime });
+	setInterval(() => {
+		parser.isLive = false;
+		console.log('Global restart');
+		parser = new Parser({ restartTime: config.restartTime });
+	}, 1000 * 60 * 60);
 }
 
 main().catch((error) => {

@@ -278,7 +278,7 @@ export default class Parser {
   }
 
   async checkingPages() {
-    while (true) {
+    while (this.isLive) {
       if (Object.values(this.pagesReportsProxies).length === 0 || Object.values(this.pagesNewsProxies).length) {
         await this.build();
       }
@@ -325,7 +325,7 @@ export default class Parser {
   }
 
   async scanningNews(restartSycles) {
-    while (true) {
+    while (this.isLive) {
       console.log('Cycles #', restartSycles, this.restartSycles);
       if (restartSycles !== this.restartSycles) {
         return;
@@ -415,7 +415,7 @@ export default class Parser {
   }
 
   async savingAllFiles() {
-    while (true) {
+    while (this.isLive) {
       if (this.tasksOfSavingReportsFiles?.length) {
         let tasks = this.tasksOfSavingReportsFiles.slice(0, 50);
         this.tasksOfSavingReportsFiles = this.tasksOfSavingReportsFiles.slice(50);
@@ -473,7 +473,7 @@ export default class Parser {
   }
 
   async scanningReports(restartSycles) {
-    while (true) {
+    while (this.isLive) {
       console.log('Cycles #', restartSycles, this.restartSycles);
       if (restartSycles !== this.restartSycles) {
         return;
@@ -493,7 +493,8 @@ export default class Parser {
     this.savingAllFiles();
     this.isFirstIterationNews = true;
     this.isFirstIterationReports = true;
-    while (true) {
+    this.isLive = true;
+    while (this.isLive) {
       await this.build();
       await this.waitForTimeout(1000 * 60 * 60);
     }
