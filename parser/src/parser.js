@@ -117,7 +117,7 @@ export default class Parser {
 
       fs.unlinkSync(zipPath);
   } catch (error) {
-      // console.error('Ошибка:', error.message);
+      console.error('ERROR while saving file', error.message);
   }
   };
 
@@ -348,11 +348,11 @@ export default class Parser {
 
   async savingAllFiles() {
     while (true) {
-      if (this.tasksOfSavingReportsFiles) {
-        let tasks = this.tasksOfSavingReportsFiles.slice(0, 10);
-        this.tasksOfSavingReportsFiles = this.tasksOfSavingReportsFiles.slice(10);
+      if (this.tasksOfSavingReportsFiles?.length) {
+        let tasks = this.tasksOfSavingReportsFiles.slice(0, 50);
+        this.tasksOfSavingReportsFiles = this.tasksOfSavingReportsFiles.slice(50);
         await Promise.all(tasks.map(task => this.downloadAndExtractFile(...task)));
-        console.log(`10/${this.tasksOfSavingReportsFiles.length + 10} files was saved`);
+        console.log(`50/${this.tasksOfSavingReportsFiles.length + 50} files was saved`);
       }
       await this.waitForTimeout(2000);
     }
