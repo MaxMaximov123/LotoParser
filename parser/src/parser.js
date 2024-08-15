@@ -80,6 +80,7 @@ export default class Parser {
   }
 
   async downloadAndExtractFile(url, outputDir, newFileNameWithoutExt) {
+    await this.waitForTimeout(500);
     let zipPath;
     try {
       if (!fs.existsSync(outputDir)) {
@@ -177,10 +178,11 @@ export default class Parser {
           throw new Error('Ошибка сохранения rar', rarErr.message);
         }
       }
+
+      fs.unlinkSync(zipPath);
     } catch (error) {
       console.error('ERROR while saving file', url, error.message);
     }
-    fs.unlinkSync(zipPath);
   };
 
   async fetchReportTableData(url) {
@@ -310,7 +312,6 @@ export default class Parser {
 
     return result;
   }
-
 
   async scanningNews(restartSycles) {
     while (true) {
