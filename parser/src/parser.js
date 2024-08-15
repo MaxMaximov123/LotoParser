@@ -442,14 +442,13 @@ export default class Parser {
 
       let url = row['Файл'];
 
-      if (!this.isFirstIterationReports) {
-        this.controlSavingFiles(url, './data/reports', MD5(row['Файл']).toString());
-      }
-
-      row['Файл'] = `${__dirname}/data/reports/${MD5(row['Файл']).toString()}`;
 
       if (!this.historyReports.includes(hashOfData)) {
+        if (!this.isFirstIterationReports) {
+          this.controlSavingFiles(url, './data/reports', MD5(row['Файл']).toString());
+        }
 
+        row['Файл'] = `${__dirname}/data/reports/${MD5(row['Файл']).toString()}`;
         // post request!!!!!!!
         this.newReports.push(row);
 
