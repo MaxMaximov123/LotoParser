@@ -252,6 +252,7 @@ export default class Parser {
 
   async scanningNews(restartSycles) {
     while (true) {
+      console.log('Cycles #', restartSycles, this.restartSycles);
       if (restartSycles !== this.restartSycles) {
         return;
       }
@@ -403,6 +404,7 @@ export default class Parser {
 
   async scanningReports(restartSycles) {
     while (true) {
+      console.log('Cycles #', restartSycles, this.restartSycles);
       if (restartSycles !== this.restartSycles) {
         return;
       }

@@ -13,8 +13,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '4.0'       # Максимум 2 CPU
-          memory: 8G        # Максимум 4 ГБ памяти
+          cpus: '3.0'       # Максимум 2 CPU
+          memory: 6G        # Максимум 4 ГБ памяти
         reservations:
           cpus: '2.0'       # Минимум 1 CPU
           memory: 4G        # Минимум 2 ГБ памяти
