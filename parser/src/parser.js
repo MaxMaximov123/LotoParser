@@ -202,6 +202,15 @@ export default class Parser {
     return result;
   }
 
+  async checkingPages() {
+    while (true) {
+      if (Object.values(this.pagesReportsProxies).length === 0 || Object.values(this.pagesNewsProxies).length) {
+        await this.build();
+      }
+      await this.waitForTimeout(30 * 1000);
+    }
+  }
+
   extractSubstrings(input) {
     let regexStart = /\d\.\d\.\d/g;
     let regexEnd = /\d\.\d\.\d|\d\.\d|$/g;
