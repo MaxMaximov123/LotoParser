@@ -1,57 +1,52 @@
-import fetch from 'node-fetch';
 import fs from 'fs';
 import path from 'path';
-import AdmZip from 'adm-zip';
+import Unrar from 'unrar'; // Используем библиотеку node-unrar-js
+import AdmZip from 'adm-zip';          // Для создания ZIP архивов
+import { createExtractorFromFile } from 'node-unrar-js'
 
-const sanitizeFileName = (fileName) => {
-    return fileName
-        .replace(/[<>:"\/\\|?*\x00-\x1F]/g, '_')  // Заменяем недопустимые символы на "_"
-        .replace(/[^\x00-\x7F]/g, '')  // Удаляем нелатинские символы, которые могут вызывать ошибки
-        .trim();
-};
-
-const downloadAndExtractFile = async (url, outputDir, newFileNameWithoutExt) => {
+const convertRarToZip = async (rarFilePath, outputDir, zipFileName) => {
     try {
+        // Проверка на существование выходной директории
         if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir);
+            fs.mkdirSync(outputDir, { recursive: true });
         }
 
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`Ошибка загрузки: ${response.statusText}`);
-        }
-        const buffer = await response.buffer();
+        // Чтение данных RAR архива
+        const tempExtractDir = path.join(outputDir, 'temp_extract');
+        const rarBuffer = fs.readFileSync(rarFilePath);
+        
+        const extractor = await createExtractorFromFile({
+            filepath: rarFilePath,
+            targetPath: tempExtractDir
+          });
 
-        const zipPath = path.join(outputDir, 'temp.zip');
-        fs.writeFileSync(zipPath, buffer);
+        [...extractor.extract().files];
 
-        const zip = new AdmZip(zipPath);
-        const zipEntries = zip.getEntries();
 
-        if (zipEntries.length !== 1) {
-            throw new Error('Ожидался один файл в архиве');
-        }
+        // Создание ZIP архива
+        const zip = new AdmZip();
+        const files = fs.readdirSync(tempExtractDir);
 
-        const zipEntry = zipEntries[0];
-        const originalFileName = zipEntry.entryName;
-        const fileExtension = path.extname(originalFileName);  // Получаем расширение файла
+        files.forEach(file => {
+            const filePath = path.join(tempExtractDir, file);
+            zip.addLocalFile(filePath);
+        });
 
-        const sanitizedFileName = sanitizeFileName(newFileNameWithoutExt) + fileExtension;  // Добавляем расширение к новому имени
-        const extractedFilePath = path.join(outputDir, sanitizedFileName);
+        const zipFilePath = path.join(outputDir, zipFileName);
+        zip.writeZip(zipFilePath);
 
-        fs.writeFileSync(extractedFilePath, zipEntry.getData());
-        console.log(`Файл сохранен: ${extractedFilePath}`);
+        console.log(`Архив успешно преобразован в ZIP: ${zipFilePath}`);
 
-        fs.unlinkSync(zipPath);
+        // Очистка временной директории
+        fs.rmSync(tempExtractDir, { recursive: true, force: true });
     } catch (error) {
-        console.error('Ошибка:', error.message);
+        console.error('Ошибка при преобразовании RAR в ZIP:', error.message);
     }
 };
 
-// Пример использования функции
-(async () => {
-    const url = 'https://www.e-disclosure.ru/portal/FileLoad.ashx?Fileid=1850223';  // Замените на реальный URL
-    const outputDir = './downloads';
-    const newFileNameWithoutExt = 'MyNewFileName';  // Задайте любое имя без расширения
-    await downloadAndExtractFile(url, outputDir, newFileNameWithoutExt);
-})();
+// Пример использования
+const rarFilePath = './test/temp.rar'; // Замените на путь к вашему RAR файлу
+const outputDir = './test';      // Замените на путь к выходной директории
+const zipFileName = 'temp.zip';            // Название выходного ZIP файла
+
+convertRarToZip(rarFilePath, outputDir, zipFileName);

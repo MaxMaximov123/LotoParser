@@ -16,6 +16,14 @@ import { fileURLToPath } from 'url';
 import HttpsProxyAgent from 'https-proxy-agent';
 import ProxyChain from 'proxy-chain';
 import UserAgent from 'user-agents';
+// import Unrar from 'unrar';
+// import Unrar from 'unrar-js';
+// import Unrar from 'node-unrar';
+// import Unrar from 'node-unrar-js';
+// import Unrar from 'unrar';
+import unrar from 'unrar-js';
+import { createExtractorFromFile } from 'node-unrar-js'
+// const { extract } = pkg; 
 
 const __dirname = dirname(fileURLToPath(import.meta.url + '/..'));
 const __filename = fileURLToPath(import.meta.url);
@@ -49,37 +57,42 @@ export default class Parser {
 
   postRequest(url, data) {
     return new Promise((resolve, reject) => {
-    const options = {
+      const options = {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
         },
         body: JSON.stringify(data)
-    };
-    
-    fetch(url, options)
-    .then(response => response.json())
-    .then(result => {
-        resolve(result);
-    })
-    .catch(error => {
-        reject(error);
-    });
+      };
+
+      fetch(url, options)
+        .then(response => response.json())
+        .then(result => {
+          resolve(result);
+        })
+        .catch(error => {
+          reject(error);
+        });
     })
   }
 
   async downloadAndExtractFile(url, outputDir, newFileNameWithoutExt) {
+    let zipPath;
     try {
       if (!fs.existsSync(outputDir)) {
-          fs.mkdirSync(outputDir, { recursive: true });
+        fs.mkdirSync(outputDir, { recursive: true });
       }
 
       // console.log('Saving', url);
 
-      if (fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.pdf`) || fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.doc`)) {
+      if (
+        fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.pdf`) || 
+        fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.doc`) ||
+        fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.xls`)
+        ) {
         // console.log(`Файл уже сохранен: ${outputDir}/${newFileNameWithoutExt}`);
         return;
       }
@@ -88,37 +101,86 @@ export default class Parser {
       let page = Object.values(this.pagesReportsProxies)[randomIndexPage];
 
       const response = await page.evaluate(async (url) => {
-          const res = await fetch(url, { timeout: 60000 });
-          const buffer = await res.arrayBuffer(); // возвращаемый массив байтов
-          return Array.from(new Uint8Array(buffer)); // преобразуем в массив чисел
+        const res = await fetch(url, { timeout: 60000 });
+        const buffer = await res.arrayBuffer(); // возвращаемый массив байтов
+        return Array.from(new Uint8Array(buffer)); // преобразуем в массив чисел
       }, url, { timeout: 120000 });
 
       const buffer = Buffer.from(response);
 
-      const zipPath = path.join(outputDir, 'temp.zip');
-      fs.writeFileSync(zipPath, buffer);
+      try {
 
-      const zip = new AdmZip(zipPath);
-      const zipEntries = zip.getEntries();
+        zipPath = path.join(outputDir, `temp_${newFileNameWithoutExt}.zip`);
+        fs.writeFileSync(zipPath, buffer);
 
-      if (zipEntries.length !== 1) {
-          throw new Error('Ожидался один файл в архиве');
+        const zip = new AdmZip(zipPath);
+        const zipEntries = zip.getEntries();
+
+        if (zipEntries.length === 0) {
+          throw new Error('Архив пустой');
+        }
+
+        const zipEntry = zipEntries[0];
+        const originalFileName = zipEntry.entryName;
+        const fileExtension = path.extname(originalFileName);
+
+        const sanitizedFileName = this.sanitizeFileName(newFileNameWithoutExt) + fileExtension;
+        const extractedFilePath = path.join(outputDir, sanitizedFileName);
+
+        fs.writeFileSync(extractedFilePath, zipEntry.getData());
+        // console.log(`Файл сохранен: ${extractedFilePath}`);
+      } catch (e) {
+        try {
+          fs.unlinkSync(zipPath);
+          const tempExtractDir = path.join(outputDir, `temp_${newFileNameWithoutExt}`);
+          const tempPath = path.join(outputDir, `temp_${newFileNameWithoutExt}.rar`);
+          fs.writeFileSync(tempPath, buffer);
+
+          const extractor = await createExtractorFromFile({
+            filepath: tempPath,
+            targetPath: tempExtractDir
+          });
+
+          [...extractor.extract().files];
+
+          fs.unlinkSync(tempPath);
+
+          const zip1 = new AdmZip();
+          const files = fs.readdirSync(tempExtractDir);
+
+          files.forEach(file => {
+            const filePath = path.join(tempExtractDir, file);
+            zip1.addLocalFile(filePath);
+          });
+
+          const zipFilePath = path.join(outputDir, `temp_${newFileNameWithoutExt}.zip`);
+          zip1.writeZip(zipFilePath);
+          fs.rmSync(tempExtractDir, { recursive: true, force: true });
+
+          const zip = new AdmZip(zipPath);
+          const zipEntries = zip.getEntries();
+
+          if (zipEntries.length === 0) {
+            throw new Error('Архив пустой');
+          }
+
+          const zipEntry = zipEntries[0];
+          const originalFileName = zipEntry.entryName;
+          const fileExtension = path.extname(originalFileName);
+
+          const sanitizedFileName = this.sanitizeFileName(newFileNameWithoutExt) + fileExtension;
+          const extractedFilePath = path.join(outputDir, sanitizedFileName);
+
+          fs.writeFileSync(extractedFilePath, zipEntry.getData());
+        } catch (rarErr) {
+          console.log(rarErr);
+          throw new Error('Ошибка сохранения rar', rarErr.message);
+        }
       }
-
-      const zipEntry = zipEntries[0];
-      const originalFileName = zipEntry.entryName;
-      const fileExtension = path.extname(originalFileName);
-
-      const sanitizedFileName = this.sanitizeFileName(newFileNameWithoutExt) + fileExtension;
-      const extractedFilePath = path.join(outputDir, sanitizedFileName);
-
-      fs.writeFileSync(extractedFilePath, zipEntry.getData());
-      // console.log(`Файл сохранен: ${extractedFilePath}`);
-
-      fs.unlinkSync(zipPath);
-  } catch (error) {
+    } catch (error) {
       console.error('ERROR while saving file', url, error.message);
-  }
+    }
+    fs.unlinkSync(zipPath);
   };
 
   async fetchReportTableData(url) {
@@ -237,7 +299,7 @@ export default class Parser {
 
     return result;
   }
-  
+
   async getFromSite(url) {
     let randomIndexPage = Math.floor(Math.random() * Object.values(this.pagesReportsProxies).length);
     let page = Object.values(this.pagesReportsProxies)[randomIndexPage];
@@ -294,7 +356,7 @@ export default class Parser {
           fullText: await this.getContentFromElement(`https://www.e-disclosure.ru/portal/event.aspx?EventId=${news.pseudoGUID}`),
           textes: [],
         };
-        
+
         if (newsToPost.fullText) {
           for (let filter of this.subtitles[news.eventName].filters || []) {
             for (let startFilter of filter.start) {
@@ -337,13 +399,7 @@ export default class Parser {
   }
 
   async controlSavingFiles(url, path, name) {
-    await this.waitForTimeout(Math.floor((1 + Math.random()) * 5000));
     this.tasksOfSavingReportsFiles.push([url, path, name]);
-
-    // if (this.tasksOfSavingReportsFiles.length >= 2) {
-    //   await Promise.all(this.tasksOfSavingReportsFiles);
-    //   this.tasksOfSavingReportsFiles = [];
-    // }
   }
 
   async savingAllFiles() {
@@ -375,7 +431,9 @@ export default class Parser {
 
       let url = row['Файл'];
 
-      this.controlSavingFiles(url, './data/reports', MD5(row['Файл']).toString());
+      if (!this.isFirstIterationReports || 1) {
+        this.controlSavingFiles(url, './data/reports', MD5(row['Файл']).toString());
+      }
 
       row['Файл'] = `${__dirname}/data/reports/${MD5(row['Файл']).toString()}`;
 
@@ -450,21 +508,21 @@ export default class Parser {
     for (let subtitle of subtitlesFile) {
       this.subtitles[subtitle.subtitle] = subtitle;
     }
-    
+
     let originalProxies = JSON.parse(fs.readFileSync('./data/proxies.json', 'utf8'));
     this.proxies = await Promise.all(
       originalProxies.map(
         async proxy => await ProxyChain.anonymizeProxy(proxy)
-        )
+      )
     );
-    
+
 
     console.log(this.proxies);
 
     this.browsersProxies = {};
     this.pagesReportsProxies = {};
     this.pagesNewsProxies = {};
-    
+
     let indProxy = 0;
     for (let proxy of this.proxies) {
       let originalProxy = originalProxies[indProxy];
@@ -493,7 +551,7 @@ export default class Parser {
         });
 
         this.browsersProxies[proxy] = browser;
-    
+
         let pageNews = await browser.newPage();
         this.pagesNewsProxies[proxy] = pageNews;
         await pageNews.mouse.move(100, 100);
@@ -518,7 +576,7 @@ export default class Parser {
 
         pageNews.on('response', async (response) => {
           let url = response.url();
-          
+
           if (url.startsWith('https://www.e-disclosure.ru/xpvnsulc')) {
             console.log('removed news', originalProxy);
             delete this.pagesNewsProxies[proxy];
@@ -538,11 +596,11 @@ export default class Parser {
           'sec-ch-ua': '"Chromium";v="124", "YaBrowser";v="24.6", "Not-A.Brand";v="99", "Yowser";v="2.5"',
           'sec-ch-ua-mobile': '?0',
           'sec-ch-ua-platform': '"macOS"',
-      });
-        await pageNews.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', {waitUntil: 'networkidle2', timeout: 120000});
+        });
+        await pageNews.goto('https://www.e-disclosure.ru/poisk-po-soobshheniyam', { waitUntil: 'networkidle2', timeout: 120000 });
         await this.waitForTimeout(1000);
-    
-    
+
+
         let pageReport = await browser.newPage();
         this.pagesReportsProxies[proxy] = pageReport;
 
@@ -550,7 +608,7 @@ export default class Parser {
           'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
           'Referer': 'https://www.example.com',
           'DNT': '1',
-      });
+        });
 
         await pageReport.evaluateOnNewDocument(() => {
           Object.defineProperty(navigator, 'plugins', {
@@ -566,7 +624,7 @@ export default class Parser {
 
         pageReport.on('response', async (response) => {
           let url = response.url();
-          
+
           if (url.startsWith('https://www.e-disclosure.ru/xpvnsulc')) {
             console.log('removed report', originalProxy);
             delete this.pagesReportsProxies[proxy];
@@ -588,11 +646,11 @@ export default class Parser {
           'sec-ch-ua': '"Chromium";v="124", "YaBrowser";v="24.6", "Not-A.Brand";v="99", "Yowser";v="2.5"',
           'sec-ch-ua-mobile': '?0',
           'sec-ch-ua-platform': '"macOS"',
-      });
-        await pageReport.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', {waitUntil: 'networkidle2', timeout: 120000});
-    
+        });
+        await pageReport.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', { waitUntil: 'networkidle2', timeout: 120000 });
+
         console.log(`Browser with proxy ${originalProxy} is ready!`);
-    
+
       } catch (error) {
         console.error(`Error with browser ${originalProxy}:`, error);
       }
@@ -610,7 +668,7 @@ export default class Parser {
     console.log(`${Object.keys(this.browsersProxies).length} browsers available`);
     console.log(`${Object.keys(this.pagesNewsProxies).length} pages news available`);
     console.log(`${Object.keys(this.pagesReportsProxies).length} pages reports available`);
-    
+
     if (Object.keys(this.pagesNewsProxies).length + Object.keys(this.pagesReportsProxies).length >= 2) {
       this.restartSycles += 1;
       this.scanningNews(this.restartSycles);
