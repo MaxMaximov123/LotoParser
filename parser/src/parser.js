@@ -117,7 +117,7 @@ export default class Parser {
 
       fs.unlinkSync(zipPath);
   } catch (error) {
-      console.error('ERROR while saving file', error.message);
+      console.error('ERROR while saving file', url, error.message);
   }
   };
 
