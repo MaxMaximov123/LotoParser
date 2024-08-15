@@ -92,7 +92,11 @@ export default class Parser {
       if (
         fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.pdf`) || 
         fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.doc`) ||
-        fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.xls`)
+        fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.xls`) ||
+        fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.docx`) ||
+        fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.xlsx`) ||
+        fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.rtf`) ||
+        fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.tif`)
         ) {
         // console.log(`Файл уже сохранен: ${outputDir}/${newFileNameWithoutExt}`);
         return;
@@ -156,7 +160,6 @@ export default class Parser {
 
           const zipFilePath = path.join(outputDir, `temp_${newFileNameWithoutExt}.zip`);
           zip1.writeZip(zipFilePath);
-          fs.rmSync(tempExtractDir, { recursive: true, force: true });
 
           const zip = new AdmZip(zipPath);
           const zipEntries = zip.getEntries();
@@ -178,8 +181,15 @@ export default class Parser {
           throw new Error('Ошибка сохранения rar', rarErr.message);
         }
       }
-
-      fs.unlinkSync(zipPath);
+      try {
+        fs.unlinkSync(zipPath);
+      } catch(e) {}
+      try {
+        fs.unlinkSync(tempPath);
+      } catch(e) {}
+      try {
+        fs.rmSync(tempExtractDir, { recursive: true, force: true });
+      } catch(e) {}
     } catch (error) {
       console.error('ERROR while saving file', url, error.message);
     }
@@ -432,7 +442,7 @@ export default class Parser {
 
       let url = row['Файл'];
 
-      if (!this.isFirstIterationReports || 1) {
+      if (!this.isFirstIterationReports) {
         this.controlSavingFiles(url, './data/reports', MD5(row['Файл']).toString());
       }
 
