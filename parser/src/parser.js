@@ -135,6 +135,7 @@ export default class Parser {
         fs.writeFileSync(extractedFilePath, zipEntry.getData());
         // console.log(`Файл сохранен: ${extractedFilePath}`);
       } catch (e) {
+        console.log('ERROR with zip', url, e.message)
         try {
           fs.unlinkSync(zipPath);
           const tempExtractDir = path.join(outputDir, `temp_${newFileNameWithoutExt}`);
