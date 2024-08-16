@@ -11,7 +11,10 @@ services:
     volumes:
       - ./parser/data:/app/data
     logging:
-      driver: "none"
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "10"
     deploy:
       resources:
         limits:
