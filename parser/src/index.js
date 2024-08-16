@@ -3,9 +3,14 @@ import Parser from './parser.js';
 
 let parser;
 let a = 10;
+let isFirstIterationNews = true, isFirstIterationReports = true;
 
 async function main() {
-	parser = new Parser({ restartTime: config.restartTime });
+	parser = new Parser({
+		restartTime: config.restartTime, 
+		isFirstIterationNews: isFirstIterationNews, 
+		isFirstIterationReports: isFirstIterationReports 
+	});
 	setInterval(() => {
 		parser.isLive = false;
 		console.log('Global restarting');
@@ -13,7 +18,14 @@ async function main() {
 			console.log(`Delete ${prop}`);
 			delete parser[prop]
 		});
-		parser = new Parser({ restartTime: config.restartTime });
+		isFirstIterationNews = false;
+		isFirstIterationReports = false;
+		
+		parser = new Parser({
+			restartTime: config.restartTime, 
+			isFirstIterationNews: isFirstIterationNews, 
+			isFirstIterationReports: isFirstIterationReports 
+		});
 	}, 1000 * 60 * 60);
 }
 

@@ -36,8 +36,10 @@ export default class Parser {
   isScanning = true;
   restartSycles = 0;
 
-  constructor({ restartTime }) {
+  constructor({ restartTime, isFirstIterationNews, isFirstIterationReports }) {
     this.restartTime = restartTime;
+    this.isFirstIterationNews = isFirstIterationNews;
+    this.isFirstIterationReports = isFirstIterationReports;
 
     this.start().catch((error) => {
       console.log(error);
@@ -491,8 +493,6 @@ export default class Parser {
   async start() {
     this.tasksOfSavingReportsFiles = [];
     this.savingAllFiles();
-    this.isFirstIterationNews = true;
-    this.isFirstIterationReports = true;
     this.isLive = true;
     while (this.isLive) {
       await this.build();
@@ -684,8 +684,12 @@ export default class Parser {
 
     if (Object.keys(this.pagesNewsProxies).length + Object.keys(this.pagesReportsProxies).length >= 2) {
       this.restartSycles += 1;
-      this.scanningNews(this.restartSycles);
-      this.scanningReports(this.restartSycles);
+      this.scanningNews(this.restartSycles).catch((error) => {
+        console.log('scanningNews error', error);
+      });;
+      this.scanningReports(this.restartSycles).catch((error) => {
+        console.log('scanningReports error', error);
+      });;;
       console.log('Start parsing');
     } else {
       await this.waitForTimeout(1000 * 60);
