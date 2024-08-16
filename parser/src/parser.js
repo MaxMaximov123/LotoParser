@@ -279,12 +279,22 @@ export default class Parser {
     return result;
   }
 
+  async closeAllBrowsers() {
+    for (let browser of Object.values(this.browsersProxies)) {
+      await browser.close();
+    }
+  }
+
   async checkingPages() {
     while (this.isLive) {
       if (Object.values(this.pagesReportsProxies).length === 0 || Object.values(this.pagesNewsProxies).length) {
         await this.build();
       }
       await this.waitForTimeout(30 * 1000);
+    }
+
+    if (!this.isLive) {
+      await this.closeAllBrowsers();
     }
   }
 
