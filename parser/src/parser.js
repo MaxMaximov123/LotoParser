@@ -496,6 +496,7 @@ export default class Parser {
     this.isLive = true;
     while (this.isLive) {
       await this.build();
+      break;
       await this.waitForTimeout(1000 * 60 * 60);
     }
   }

@@ -10,7 +10,7 @@ async function main() {
 		parser.isLive = false;
 		console.log('Global restart');
 		parser = new Parser({ restartTime: config.restartTime });
-	}, 1000 * 60 * 60);
+	}, 1000 * 60 * 60 * 2);
 }
 
 main().catch((error) => {
