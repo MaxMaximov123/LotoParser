@@ -8,9 +8,13 @@ async function main() {
 	parser = new Parser({ restartTime: config.restartTime });
 	setInterval(() => {
 		parser.isLive = false;
-		console.log('Global restart');
+		console.log('Global restarting');
+		Object.keys(parser).forEach(prop => {
+			console.log(`Delete ${prop}`);
+			delete parser[prop]
+		});
 		parser = new Parser({ restartTime: config.restartTime });
-	}, 1000 * 60 * 60 * 2);
+	}, 1000 * 60 * 60);
 }
 
 main().catch((error) => {
