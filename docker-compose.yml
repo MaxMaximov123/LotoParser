@@ -18,11 +18,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '3.0'       # Максимум 2 CPU
-          memory: 6G        # Максимум 4 ГБ памяти
+          cpus: '3.0'       # Максимум 3 CPU
+          memory: 6G        # Максимум 6 ГБ памяти
         reservations:
-          cpus: '2.0'       # Минимум 1 CPU
-          memory: 4G        # Минимум 2 ГБ памяти
+          cpus: '2.0'       # Минимум 2 CPU
+          memory: 4G        # Минимум 4 ГБ памяти
 
 volumes:
   data:
