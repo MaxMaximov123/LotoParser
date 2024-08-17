@@ -11,23 +11,23 @@ async function main() {
 		isFirstIterationNews: isFirstIterationNews, 
 		isFirstIterationReports: isFirstIterationReports 
 	});
-	setInterval(async () => {
-		parser.isLive = false;
-		console.log('Global restarting');
-		Object.keys(parser).forEach(prop => {
-			console.log(`Delete ${prop}`);
-			delete parser[prop]
-		});
-		await new Promise((resolve) => setTimeout(resolve, 10000));
-		isFirstIterationNews = false;
-		isFirstIterationReports = false;
+	// setInterval(async () => {
+	// 	parser.isLive = false;
+	// 	console.log('Global restarting');
+	// 	Object.keys(parser).forEach(prop => {
+	// 		console.log(`Delete ${prop}`);
+	// 		delete parser[prop]
+	// 	});
+	// 	await new Promise((resolve) => setTimeout(resolve, 10000));
+	// 	isFirstIterationNews = false;
+	// 	isFirstIterationReports = false;
 
-		parser = new Parser({
-			restartTime: config.restartTime, 
-			isFirstIterationNews: isFirstIterationNews, 
-			isFirstIterationReports: isFirstIterationReports 
-		});
-	}, 1000 * 60 * 30);
+	// 	parser = new Parser({
+	// 		restartTime: config.restartTime, 
+	// 		isFirstIterationNews: isFirstIterationNews, 
+	// 		isFirstIterationReports: isFirstIterationReports 
+	// 	});
+	// }, 1000 * 60 * 30);
 }
 
 main().catch((error) => {
