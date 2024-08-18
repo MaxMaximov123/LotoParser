@@ -504,6 +504,8 @@ export default class Parser {
     this.tasksOfSavingReportsFiles = [];
     this.savingAllFiles();
     this.isLive = true;
+    this.newNews = [];
+    this.newReports = [];
     while (this.isLive) {
       await this.build();
       await this.waitForTimeout(1000 * 60 * 60);
@@ -513,8 +515,6 @@ export default class Parser {
 
   async build() {
     console.log(`Cycle #${this.restartSycles}`);
-    this.newNews = [];
-    this.newReports = [];
     this.historyNews = JSON.parse(fs.readFileSync('./data/historyNews.json', 'utf8'));
     this.historyReports = JSON.parse(fs.readFileSync('./data/historyReports.json', 'utf8'));
 
