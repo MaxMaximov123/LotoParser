@@ -335,7 +335,6 @@ export default class Parser {
 
   async scanningNews(restartSycles) {
     while (this.isLive) {
-      logger.info(`Scanning news cycles #${restartSycles} ${this.restartSycles}`);
       if (restartSycles !== this.restartSycles) {
         return;
       }
