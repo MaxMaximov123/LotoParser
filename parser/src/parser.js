@@ -22,6 +22,7 @@ import UserAgent from 'user-agents';
 // import Unrar from 'node-unrar-js';
 // import Unrar from 'unrar';
 import unrar from 'unrar-js';
+import logger from './logger.js';
 import { createExtractorFromFile } from 'node-unrar-js'
 // const { extract } = pkg; 
 
@@ -42,7 +43,7 @@ export default class Parser {
     this.isFirstIterationReports = isFirstIterationReports;
 
     this.start().catch((error) => {
-      console.log(error);
+      logger.error(error);
     });
   }
 
@@ -89,8 +90,6 @@ export default class Parser {
         fs.mkdirSync(outputDir, { recursive: true });
       }
 
-      // console.log('Saving', url);
-
       if (
         fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.pdf`) || 
         fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.doc`) ||
@@ -100,7 +99,6 @@ export default class Parser {
         fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.rtf`) ||
         fs.existsSync(`${outputDir}/${newFileNameWithoutExt}.tif`)
         ) {
-        // console.log(`Файл уже сохранен: ${outputDir}/${newFileNameWithoutExt}`);
         return;
       }
 
@@ -135,9 +133,8 @@ export default class Parser {
         const extractedFilePath = path.join(outputDir, sanitizedFileName);
 
         fs.writeFileSync(extractedFilePath, zipEntry.getData());
-        // console.log(`Файл сохранен: ${extractedFilePath}`);
       } catch (e) {
-        console.log('ERROR with zip', url, e.message)
+        logger.error('ERROR with zip', url, e.message)
         try {
           fs.unlinkSync(zipPath);
           const tempExtractDir = path.join(outputDir, `temp_${newFileNameWithoutExt}`);
@@ -180,7 +177,7 @@ export default class Parser {
 
           fs.writeFileSync(extractedFilePath, zipEntry.getData());
         } catch (rarErr) {
-          console.log(rarErr);
+          logger.error(rarErr);
           throw new Error('Ошибка сохранения rar', rarErr.message);
         }
       }
@@ -194,7 +191,7 @@ export default class Parser {
         fs.rmSync(tempExtractDir, { recursive: true, force: true });
       } catch(e) {}
     } catch (error) {
-      console.error('ERROR while saving file', url, error.message);
+      logger.error('ERROR while saving file', url, error.message);
     }
   };
 
@@ -240,7 +237,7 @@ export default class Parser {
 
       return rows;
     } catch (error) {
-      console.error('Ошибка при получении данных:', error);
+      logger.error('Ошибка при получении данных:', error);
       return [];
     }
   }
@@ -255,7 +252,7 @@ export default class Parser {
       if (contentElement.length > 0) {
         return contentElement.text().trim();
       } else {
-        console.log('Элемент с id "cont_wrap" не найден');
+        logger.info('Элемент с id "cont_wrap" не найден');
       }
     } catch (error) {
       console.error('Ошибка:', error.message);
@@ -338,7 +335,7 @@ export default class Parser {
 
   async scanningNews(restartSycles) {
     while (this.isLive) {
-      console.log('Cycles #', restartSycles, this.restartSycles);
+      logger.info(`Scanning news cycles #${restartSycles} ${this.restartSycles}`);
       if (restartSycles !== this.restartSycles) {
         return;
       }
@@ -358,66 +355,73 @@ export default class Parser {
 
         responseData = responseData.foundEventsList;
       } catch (e) {
-        console.log('Error while getting POST', e);
-        await this.waitForTimeout(10000);
+        logger.error('Error while getting POST', e);
+        await this.waitForTimeout(200);
         continue;
       }
 
-      for (let news of responseData) {
-        if (!this.tickers[news.companyName]) {
-          console.log(`Skip news unknown company name id: ${news.pseudoGUID}`);
-          continue;
-        }
+      await Promise.all(
+        responseData.map(
+          news => (async (news) => {
+            if (!this.tickers[news.companyName]) {
+              // logger.info(`Skip news unknown company name id: ${news.pseudoGUID}`);
+              return;
+            }
 
-        if (!this.subtitles[news.eventName]) {
-          console.log(`Skip news unknown subtitle id: ${news.pseudoGUID}`);
-          continue;
-        }
+            if (!this.subtitles[news.eventName]) {
+              // logger.info(`Skip news unknown subtitle id: ${news.pseudoGUID}`);
+              return;
+            }
 
-        let newsToPost = {
-          ticker: this.tickers[news.companyName].name,
-          name: news.companyName,
-          fullText: await this.getContentFromElement(`https://www.e-disclosure.ru/portal/event.aspx?EventId=${news.pseudoGUID}`),
-          textes: [],
-        };
+            let newsToPost = {
+              ticker: this.tickers[news.companyName].name,
+              name: news.companyName,
+              fullText: await this.getContentFromElement(`https://www.e-disclosure.ru/portal/event.aspx?EventId=${news.pseudoGUID}`),
+              textes: [],
+            };
 
-        if (newsToPost.fullText) {
-          for (let filter of this.subtitles[news.eventName].filters || []) {
-            for (let startFilter of filter.start) {
-              for (let endFilter of filter.end) {
-                let startIndex = newsToPost.fullText.indexOf(startFilter);
-                let endIndex = newsToPost.fullText.indexOf(endFilter);
-                newsToPost.textes.push(newsToPost.fullText.slice(startIndex, endIndex));
+            if (newsToPost.fullText) {
+              for (let filter of this.subtitles[news.eventName].filters || []) {
+                for (let startFilter of filter.start) {
+                  for (let endFilter of filter.end) {
+                    let startIndex = newsToPost.fullText.indexOf(startFilter);
+                    let endIndex = newsToPost.fullText.indexOf(endFilter);
+                    newsToPost.textes.push(newsToPost.fullText.slice(startIndex, endIndex));
+                  }
+                }
+              }
+
+              for (let substring of this.extractSubstrings(newsToPost.fullText)) {
+                for (let key of this.subtitles[news.eventName].keys) {
+                  if (substring.includes(key)) {
+                    newsToPost.textes.push(substring);
+                  }
+                }
               }
             }
-          }
 
-          for (let substring of this.extractSubstrings(newsToPost.fullText)) {
-            for (let key of this.subtitles[news.eventName].keys) {
-              if (substring.includes(key)) {
-                newsToPost.textes.push(substring);
+            let hashOfData = MD5(JSON.stringify(newsToPost)).toString();
+            if (!this.historyNews.includes(hashOfData)) {
+              // post req
+
+              this.newNews.push(newsToPost);
+
+              if (!this.isFirstIterationNews) {
+                await this.postRequest('http://92.53.124.200:5000/api/edisclosure_news', newsToPost);
+                let date = new Date();
+                let date1 = new Date(news?.pubDate);
+                logger.info(`Post news sended. Time of Sending: ${date.toLocaleString("ru-RU")}, News: ${date1.toLocaleString("ru-RU")}, Delta: ${(date - date1) / 1000}`);
               }
+              fs.writeFileSync('./data/newNews.json', JSON.stringify(this.newNews, null, 2));
+              this.historyNews.push(hashOfData);
+              fs.writeFileSync('./data/historyNews.json', JSON.stringify(this.historyNews, null, 2));
             }
-          }
-        }
+          })(news)
 
-        let hashOfData = MD5(JSON.stringify(newsToPost)).toString();
-        if (!this.historyNews.includes(hashOfData)) {
-          // post req
+        )
+      )
 
-          this.newNews.push(newsToPost);
-
-          if (!this.isFirstIterationNews) {
-            await this.postRequest('http://92.53.124.200:5000/api/edisclosure_news', newsToPost);
-            console.log('Post news sended');
-          }
-          fs.writeFileSync('./data/newNews.json', JSON.stringify(this.newNews, null, 2));
-          this.historyNews.push(hashOfData);
-          fs.writeFileSync('./data/historyNews.json', JSON.stringify(this.historyNews, null, 2));
-        }
-      }
-
-      await this.waitForTimeout(1000 * 60);
+      await this.waitForTimeout(200);
       this.isFirstIterationNews = false;
     }
   }
@@ -432,7 +436,7 @@ export default class Parser {
         let tasks = this.tasksOfSavingReportsFiles.slice(0, 50);
         this.tasksOfSavingReportsFiles = this.tasksOfSavingReportsFiles.slice(50);
         await Promise.all(tasks.map(task => this.downloadAndExtractFile(...task)));
-        console.log(`50/${this.tasksOfSavingReportsFiles.length + 50} files was saved`);
+        logger.info(`50/${this.tasksOfSavingReportsFiles.length + 50} files was saved`);
       }
       await this.waitForTimeout(2000);
     }
@@ -467,7 +471,7 @@ export default class Parser {
 
         if (!this.isFirstIterationReports) {
           await this.postRequest('http://92.53.124.200:5000/api/edisclosure_reports', row);
-          console.log("Post reports sended");
+          logger.info("Post reports sended");
         }
         fs.writeFileSync('./data/newReports.json', JSON.stringify(this.newReports, null, 2));
         this.historyReports.push(hashOfData);
@@ -481,12 +485,12 @@ export default class Parser {
       await this.saveReportForType(type, companyName);
     }
 
-    console.log(companyName, 'saved!');
+    logger.info(companyName, 'saved!');
   }
 
   async scanningReports(restartSycles) {
     while (this.isLive) {
-      console.log('Cycles #', restartSycles, this.restartSycles);
+      logger.info(`Scanning reports cycles #${restartSycles} ${this.restartSycles}`);
       if (restartSycles !== this.restartSycles) {
         return;
       }
@@ -508,13 +512,13 @@ export default class Parser {
     this.newReports = [];
     while (this.isLive) {
       await this.build();
-      await this.waitForTimeout(1000 * 60 * 60);
+      await this.waitForTimeout(1000 * 60 * 60 * 24 * 3);
       await this.closeAllBrowsers();
     }
   }
 
   async build() {
-    console.log(`Cycle #${this.restartSycles}`);
+    logger.info(`Build cycle #${this.restartSycles}`);
     this.historyNews = JSON.parse(fs.readFileSync('./data/historyNews.json', 'utf8'));
     this.historyReports = JSON.parse(fs.readFileSync('./data/historyReports.json', 'utf8'));
 
@@ -601,7 +605,7 @@ export default class Parser {
           let url = response.url();
 
           if (url.startsWith('https://www.e-disclosure.ru/xpvnsulc')) {
-            console.log('removed news', originalProxy);
+            logger.info(`Removed news: ${originalProxy}`);
             delete this.pagesNewsProxies[proxy];
           }
         });
@@ -649,7 +653,7 @@ export default class Parser {
           let url = response.url();
 
           if (url.startsWith('https://www.e-disclosure.ru/xpvnsulc')) {
-            console.log('removed report', originalProxy);
+            logger.info(`Removed report ${originalProxy}`);
             delete this.pagesReportsProxies[proxy];
           }
         });
@@ -672,14 +676,14 @@ export default class Parser {
         });
         await pageReport.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', { waitUntil: 'networkidle2', timeout: 120000 });
 
-        console.log(`Browser with proxy ${originalProxy} is ready!`);
+        logger.info(`Browser with proxy ${originalProxy} is ready!`);
 
       } catch (error) {
-        console.error(`Error with browser ${originalProxy}:`, error);
+        logger.error(`Error with browser ${originalProxy}:`, error);
       }
     }
 
-    await this.waitForTimeout(1000 * 30);
+    // await this.waitForTimeout(1000 * 30);
 
     for (let proxy of this.proxies) {
       if ((!this.pagesReportsProxies[proxy]) && (!this.pagesNewsProxies[proxy]) && this.browsersProxies[proxy]) {
@@ -688,19 +692,19 @@ export default class Parser {
       }
     }
 
-    console.log(`${Object.keys(this.browsersProxies).length} browsers available`);
-    console.log(`${Object.keys(this.pagesNewsProxies).length} pages news available`);
-    console.log(`${Object.keys(this.pagesReportsProxies).length} pages reports available`);
+    logger.info(`${Object.keys(this.browsersProxies).length} browsers available`);
+    logger.info(`${Object.keys(this.pagesNewsProxies).length} pages news available`);
+    logger.info(`${Object.keys(this.pagesReportsProxies).length} pages reports available`);
 
     if (Object.keys(this.pagesNewsProxies).length + Object.keys(this.pagesReportsProxies).length >= 2) {
       this.restartSycles += 1;
       this.scanningNews(this.restartSycles).catch((error) => {
-        console.log('scanningNews error', error);
+        logger.logger('scanningNews error', error);
       });;
       this.scanningReports(this.restartSycles).catch((error) => {
-        console.log('scanningReports error', error);
-      });;;
-      console.log('Start parsing');
+        logger.logger('scanningReports error', error);
+      });
+      logger.info('Start parsing');
     } else {
       await this.waitForTimeout(1000 * 60);
       this.build();

@@ -1,5 +1,6 @@
 import config from './config.js';
 import Parser from './parser.js';
+import logger from './logger.js';
 
 let parser;
 let a = 10;
