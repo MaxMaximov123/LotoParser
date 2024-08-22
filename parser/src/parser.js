@@ -359,6 +359,8 @@ export default class Parser {
         continue;
       }
 
+      logger.info(`Scanning ${responseData.length} news`);
+
       await Promise.all(
         responseData.map(
           news => (async (news) => {
@@ -371,6 +373,8 @@ export default class Parser {
               // logger.info(`Skip news unknown subtitle id: ${news.pseudoGUID}`);
               return;
             }
+
+            logger.info(`News id:${news.pseudoGUID} is good`);
 
             let newsToPost = {
               ticker: this.tickers[news.companyName].name,
@@ -498,7 +502,7 @@ export default class Parser {
         await this.saveReportForCompanyName(companyName);
       }
 
-      await this.waitForTimeout(60 * 1000);
+      await this.waitForTimeout(30 * 1000);
       this.isFirstIterationReports = false;
     }
   }
@@ -509,10 +513,18 @@ export default class Parser {
     this.isLive = true;
     this.newNews = [];
     this.newReports = [];
+    await this.build();
     while (this.isLive) {
-      await this.build();
-      await this.waitForTimeout(1000 * 60 * 60 * 24 * 3);
-      await this.closeAllBrowsers();
+      await this.waitForTimeout(1000 * 60 * 60);
+      logger.info('RELOAD');
+      for (let pageNews of Object.values(this.pagesNewsProxies)) {
+        await pageNews.reload({ waitUntil: 'networkidle2', timeout: 120000 });
+      }
+      for (let pageReport of Object.values(this.pagesReportsProxies)) {
+        await pageReport.reload({ waitUntil: 'networkidle2', timeout: 120000 });
+      }
+      
+      // await this.closeAllBrowsers();
     }
   }
 
@@ -572,8 +584,8 @@ export default class Parser {
           ],
           protocolTimeout: 360000,
           timeout: 120000,
-          // headless: false,
-          headless: 'new'
+          headless: false,
+          // headless: 'new'
         });
 
         this.browsersProxies[proxy] = browser;
