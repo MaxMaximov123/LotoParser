@@ -584,8 +584,8 @@ export default class Parser {
           ],
           protocolTimeout: 360000,
           timeout: 120000,
-          headless: false,
-          // headless: 'new'
+          // headless: false,
+          headless: 'new'
         });
 
         this.browsersProxies[proxy] = browser;
