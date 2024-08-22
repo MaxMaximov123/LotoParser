@@ -134,7 +134,7 @@ export default class Parser {
 
         fs.writeFileSync(extractedFilePath, zipEntry.getData());
       } catch (e) {
-        logger.error('ERROR with zip', url, e.message)
+        logger.error(`ERROR with zip ${url}, ${e.message}`)
         try {
           fs.unlinkSync(zipPath);
           const tempExtractDir = path.join(outputDir, `temp_${newFileNameWithoutExt}`);
@@ -177,7 +177,7 @@ export default class Parser {
 
           fs.writeFileSync(extractedFilePath, zipEntry.getData());
         } catch (rarErr) {
-          logger.error(rarErr);
+          logger.error(rarErr.message);
           throw new Error('Ошибка сохранения rar', rarErr.message);
         }
       }
@@ -191,7 +191,7 @@ export default class Parser {
         fs.rmSync(tempExtractDir, { recursive: true, force: true });
       } catch(e) {}
     } catch (error) {
-      logger.error('ERROR while saving file', url, error.message);
+      logger.error(`ERROR while saving file ${url}, ${error.message}`);
     }
   };
 
@@ -237,7 +237,7 @@ export default class Parser {
 
       return rows;
     } catch (error) {
-      logger.error('Ошибка при получении данных:', error);
+      logger.error(`Ошибка при получении данных: ${error.message}`);
       return [];
     }
   }
@@ -354,7 +354,7 @@ export default class Parser {
 
         responseData = responseData.foundEventsList;
       } catch (e) {
-        logger.error('Error while getting POST', e);
+        logger.error(`Error while getting POST, ${e.message}`);
         await this.waitForTimeout(2000);
         continue;
       }
@@ -708,10 +708,10 @@ export default class Parser {
     if (Object.keys(this.pagesNewsProxies).length + Object.keys(this.pagesReportsProxies).length >= 2) {
       this.restartSycles += 1;
       this.scanningNews(this.restartSycles).catch((error) => {
-        logger.logger('scanningNews error', error);
+        logger.error('scanningNews error', error);
       });;
       this.scanningReports(this.restartSycles).catch((error) => {
-        logger.logger('scanningReports error', error);
+        logger.error('scanningReports error', error);
       });
       logger.info('Start parsing');
     } else {
