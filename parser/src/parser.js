@@ -509,8 +509,8 @@ export default class Parser {
 
   async start() {
     this.tasksOfSavingReportsFiles = [];
-    this.savingAllFiles();
     this.isLive = true;
+    this.savingAllFiles();
     this.newNews = [];
     this.newReports = [];
     await this.build();
