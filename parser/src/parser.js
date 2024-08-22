@@ -355,7 +355,7 @@ export default class Parser {
         responseData = responseData.foundEventsList;
       } catch (e) {
         logger.error('Error while getting POST', e);
-        await this.waitForTimeout(200);
+        await this.waitForTimeout(2000);
         continue;
       }
 
@@ -422,7 +422,7 @@ export default class Parser {
         )
       )
 
-      await this.waitForTimeout(200);
+      await this.waitForTimeout(2000);
       this.isFirstIterationNews = false;
     }
   }
