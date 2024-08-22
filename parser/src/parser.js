@@ -372,7 +372,7 @@ export default class Parser {
               return;
             }
 
-            logger.info(`News id:${news.pseudoGUID} is good`);
+            logger.info(`NEWS: news id:${news.pseudoGUID} is good`);
 
             let newsToPost = {
               ticker: this.tickers[news.companyName].name,
@@ -411,7 +411,7 @@ export default class Parser {
                 await this.postRequest('http://92.53.124.200:5000/api/edisclosure_news', newsToPost);
                 let date = new Date();
                 let date1 = new Date(news?.pubDate);
-                logger.info(`Post news sended. Time of Sending: ${date.toLocaleString("ru-RU")}, News: ${date1.toLocaleString("ru-RU")}, Delta: ${(date - date1) / 1000}`);
+                logger.info(`POST news sended. Time of Sending: ${date.toLocaleString("ru-RU")}, News: ${date1.toLocaleString("ru-RU")}, Delta: ${(date - date1) / 1000}`);
               }
               fs.writeFileSync('./data/newNews.json', JSON.stringify(this.newNews, null, 2));
               this.historyNews.push(hashOfData);
@@ -437,7 +437,7 @@ export default class Parser {
         let tasks = this.tasksOfSavingReportsFiles.slice(0, 50);
         this.tasksOfSavingReportsFiles = this.tasksOfSavingReportsFiles.slice(50);
         await Promise.all(tasks.map(task => this.downloadAndExtractFile(...task)));
-        logger.info(`50/${this.tasksOfSavingReportsFiles.length + 50} files was saved`);
+        logger.info(`FILES 50/${this.tasksOfSavingReportsFiles.length + 50} files was saved`);
       }
       await this.waitForTimeout(2000);
     }
@@ -472,7 +472,7 @@ export default class Parser {
 
         if (!this.isFirstIterationReports) {
           await this.postRequest('http://92.53.124.200:5000/api/edisclosure_reports', row);
-          logger.info("Post reports sended");
+          logger.info("POST reports sended");
         }
         fs.writeFileSync('./data/newReports.json', JSON.stringify(this.newReports, null, 2));
         this.historyReports.push(hashOfData);
@@ -486,12 +486,12 @@ export default class Parser {
       await this.saveReportForType(type, companyName);
     }
 
-    logger.info(companyName, 'saved!');
+    logger.info(`REPORTS: ${companyName} saved!`);
   }
 
   async scanningReports(restartSycles) {
     while (this.isLive) {
-      logger.info(`Scanning reports cycles #${restartSycles} ${this.restartSycles}`);
+      logger.info(`REPORTS: scanning reports cycles #${restartSycles} ${this.restartSycles}`);
       if (restartSycles !== this.restartSycles) {
         return;
       }
@@ -514,7 +514,7 @@ export default class Parser {
     await this.build();
     while (this.isLive) {
       await this.waitForTimeout(1000 * 60 * 60);
-      logger.info('RELOAD');
+      logger.info('ALL: RELOAD');
       for (let pageNews of Object.values(this.pagesNewsProxies)) {
         await pageNews.reload({ waitUntil: 'networkidle2', timeout: 120000 });
       }
@@ -527,7 +527,7 @@ export default class Parser {
   }
 
   async build() {
-    logger.info(`Build cycle #${this.restartSycles}`);
+    logger.info(`BUILD: Build cycle #${this.restartSycles}`);
     this.historyNews = JSON.parse(fs.readFileSync('./data/historyNews.json', 'utf8'));
     this.historyReports = JSON.parse(fs.readFileSync('./data/historyReports.json', 'utf8'));
 
@@ -614,7 +614,7 @@ export default class Parser {
           let url = response.url();
 
           if (url.startsWith('https://www.e-disclosure.ru/xpvnsulc')) {
-            logger.info(`Removed news: ${originalProxy}`);
+            logger.info(`NEWS: page news removed: ${originalProxy}`);
             delete this.pagesNewsProxies[proxy];
           }
         });
@@ -662,7 +662,7 @@ export default class Parser {
           let url = response.url();
 
           if (url.startsWith('https://www.e-disclosure.ru/xpvnsulc')) {
-            logger.info(`Removed report ${originalProxy}`);
+            logger.info(`REPORTS: page report removed ${originalProxy}`);
             delete this.pagesReportsProxies[proxy];
           }
         });
@@ -685,10 +685,10 @@ export default class Parser {
         });
         await pageReport.goto('https://www.e-disclosure.ru/portal/files.aspx?id=38334&type=5', { waitUntil: 'networkidle2', timeout: 120000 });
 
-        logger.info(`Browser with proxy ${originalProxy} is ready!`);
+        logger.info(`BROWSER: Browser with proxy ${originalProxy} is ready!`);
 
       } catch (error) {
-        logger.error(`Error with browser ${originalProxy}:`, error);
+        logger.error(`Error with browser ${originalProxy}: ${error.message}`);
       }
     }
 
@@ -701,19 +701,19 @@ export default class Parser {
       }
     }
 
-    logger.info(`${Object.keys(this.browsersProxies).length} browsers available`);
-    logger.info(`${Object.keys(this.pagesNewsProxies).length} pages news available`);
-    logger.info(`${Object.keys(this.pagesReportsProxies).length} pages reports available`);
+    logger.info(`BROWSER: ${Object.keys(this.browsersProxies).length} browsers available`);
+    logger.info(`BROWSER: ${Object.keys(this.pagesNewsProxies).length} pages news available`);
+    logger.info(`BROWSER: ${Object.keys(this.pagesReportsProxies).length} pages reports available`);
 
     if (Object.keys(this.pagesNewsProxies).length + Object.keys(this.pagesReportsProxies).length >= 2) {
       this.restartSycles += 1;
       this.scanningNews(this.restartSycles).catch((error) => {
-        logger.error('scanningNews error', error);
+        logger.error('NEWS: scanningNews error', error);
       });;
       this.scanningReports(this.restartSycles).catch((error) => {
-        logger.error('scanningReports error', error);
+        logger.error('REPORTS: scanningReports error', error);
       });
-      logger.info('Start parsing');
+      logger.info('BROWSER: Start parsing');
     } else {
       await this.waitForTimeout(1000 * 60);
       this.build();
