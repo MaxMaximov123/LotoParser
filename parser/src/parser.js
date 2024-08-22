@@ -427,7 +427,8 @@ export default class Parser {
     }
   }
 
-  async controlSavingFiles(url, path, name) {
+  controlSavingFiles(url, path, name) {
+    logger.info(`FILES: ${url} added`);
     this.tasksOfSavingReportsFiles.push([url, path, name]);
   }
 
@@ -436,6 +437,7 @@ export default class Parser {
       if (this.tasksOfSavingReportsFiles?.length) {
         let tasks = this.tasksOfSavingReportsFiles.slice(0, 50);
         this.tasksOfSavingReportsFiles = this.tasksOfSavingReportsFiles.slice(50);
+        logger.info(`FILES: saving ${tasks.length} files`);
         await Promise.all(tasks.map(task => this.downloadAndExtractFile(...task)));
         logger.info(`FILES 50/${this.tasksOfSavingReportsFiles.length + 50} files was saved`);
       }
