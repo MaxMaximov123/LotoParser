@@ -359,8 +359,6 @@ export default class Parser {
         continue;
       }
 
-      logger.info(`Scanning ${responseData.length} news`);
-
       await Promise.all(
         responseData.map(
           news => (async (news) => {
