@@ -374,6 +374,13 @@ export default class Parser {
 
             logger.info(`NEWS: news id:${news.pseudoGUID} is good`);
 
+            let hashOfData = MD5(JSON.stringify(news)).toString();
+            if (this.historyNews.includes(hashOfData)) {
+              return;
+            }
+
+            logger.info(`NEWS: news id:${news.pseudoGUID} is new`);
+
             let newsToPost = {
               ticker: this.tickers[news.companyName].name,
               name: news.companyName,
@@ -383,8 +390,11 @@ export default class Parser {
 
             if (newsToPost.fullText) {
               for (let filter of this.subtitles[news.eventName].filters || []) {
+                await this.waitForTimeout(1);
                 for (let startFilter of filter.start) {
+                  await this.waitForTimeout(1);
                   for (let endFilter of filter.end) {
+                    await this.waitForTimeout(1);
                     let startIndex = newsToPost.fullText.indexOf(startFilter);
                     let endIndex = newsToPost.fullText.indexOf(endFilter);
                     newsToPost.textes.push(newsToPost.fullText.slice(startIndex, endIndex));
@@ -393,7 +403,9 @@ export default class Parser {
               }
 
               for (let substring of this.extractSubstrings(newsToPost.fullText)) {
+                await this.waitForTimeout(1);
                 for (let key of this.subtitles[news.eventName].keys) {
+                  await this.waitForTimeout(1);
                   if (substring.includes(key)) {
                     newsToPost.textes.push(substring);
                   }
@@ -401,23 +413,19 @@ export default class Parser {
               }
             }
 
-            let hashOfData = MD5(JSON.stringify(newsToPost)).toString();
-            if (!this.historyNews.includes(hashOfData)) {
-              // post req
+            this.newNews.push(newsToPost);
 
-              this.newNews.push(newsToPost);
-
-              if (!this.isFirstIterationNews) {
-                await this.postRequest('http://92.53.124.200:5000/api/edisclosure_news', newsToPost);
-                let date = new Date();
-                let date1 = new Date(news?.pubDate);
-                logger.info(`POST news sended. Time of Sending: ${date.toLocaleString("ru-RU")}, News: ${date1.toLocaleString("ru-RU")}, Delta: ${(date - date1) / 1000}`);
-              }
-              fs.writeFileSync('./data/newNews.json', JSON.stringify(this.newNews, null, 2));
-              this.historyNews.push(hashOfData);
-              fs.writeFileSync('./data/historyNews.json', JSON.stringify(this.historyNews, null, 2));
+            if (!this.isFirstIterationNews) {
+              await this.postRequest('http://92.53.124.200:5000/api/edisclosure_news', newsToPost);
+              let date = new Date();
+              let date1 = new Date(news?.pubDate);
+              logger.info(`POST news sended. Time of Sending: ${date.toLocaleString("ru-RU")}, News: ${date1.toLocaleString("ru-RU")}, Delta: ${(date - date1) / 1000}`);
             }
-          })(news)
+            fs.writeFileSync('./data/newNews.json', JSON.stringify(this.newNews, null, 2));
+            this.historyNews.push(hashOfData);
+            fs.writeFileSync('./data/historyNews.json', JSON.stringify(this.historyNews, null, 2));
+          }
+          )(news)
 
         )
       )
@@ -462,11 +470,12 @@ export default class Parser {
 
       let url = row['Файл'];
 
+      this.controlSavingFiles(url, './data/reports', MD5(row['Файл']).toString());
 
       if (!this.historyReports.includes(hashOfData)) {
-        if (!this.isFirstIterationReports) {
-          this.controlSavingFiles(url, './data/reports', MD5(row['Файл']).toString());
-        }
+        // if (!this.isFirstIterationReports) {
+        //   this.controlSavingFiles(url, './data/reports', MD5(row['Файл']).toString());
+        // }
 
         row['Файл'] = `${__dirname}/data/reports/${MD5(row['Файл']).toString()}`;
         // post request!!!!!!!
