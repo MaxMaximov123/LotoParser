@@ -82,7 +82,7 @@ export default class Parser {
     })
   }
 
-  async downloadAndExtractFile(url, outputDir, newFileNameWithoutExt) {
+  async downloadAndExtractFile(url, outputDir, newFileNameWithoutExt, tr=1) {
     logger.info(`FILES: ${url} added`);
     await this.waitForTimeout(500);
     let zipPath;
@@ -182,18 +182,23 @@ export default class Parser {
           throw new Error('Ошибка сохранения rar', rarErr.message);
         }
       }
-      try {
-        fs.unlinkSync(zipPath);
-      } catch(e) {}
-      try {
-        fs.unlinkSync(tempPath);
-      } catch(e) {}
-      try {
-        fs.rmSync(tempExtractDir, { recursive: true, force: true });
-      } catch(e) {}
     } catch (error) {
-      logger.error(`ERROR while saving file ${url}, ${error.message}`);
+      if (tr <= 3) {
+        await this.downloadAndExtractFile(url, outputDir, newFileNameWithoutExt, tr=tr + 1);
+      } else {
+        logger.error(`ERROR while saving file ${url}, ${error.message}`);
+      }
     }
+
+    try {
+      fs.unlinkSync(zipPath);
+    } catch(e) {}
+    try {
+      fs.unlinkSync(tempPath);
+    } catch(e) {}
+    try {
+      fs.rmSync(tempExtractDir, { recursive: true, force: true });
+    } catch(e) {}
   };
 
   async fetchReportTableData(url) {
@@ -470,12 +475,10 @@ export default class Parser {
 
       let url = row['Файл'];
 
-      this.controlSavingFiles(url, './data/reports', MD5(row['Файл']).toString());
-
       if (!this.historyReports.includes(hashOfData)) {
-        // if (!this.isFirstIterationReports) {
-        //   this.controlSavingFiles(url, './data/reports', MD5(row['Файл']).toString());
-        // }
+        if (!this.isFirstIterationReports) {
+          this.controlSavingFiles(url, './data/reports', MD5(row['Файл']).toString());
+        }
 
         row['Файл'] = `${__dirname}/data/reports/${MD5(row['Файл']).toString()}`;
         // post request!!!!!!!
