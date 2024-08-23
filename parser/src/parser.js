@@ -83,6 +83,7 @@ export default class Parser {
   }
 
   async downloadAndExtractFile(url, outputDir, newFileNameWithoutExt) {
+    logger.info(`FILES: ${url} added`);
     await this.waitForTimeout(500);
     let zipPath;
     try {
@@ -436,7 +437,6 @@ export default class Parser {
   }
 
   controlSavingFiles(url, path, name) {
-    logger.info(`FILES: ${url} added`);
     this.tasksOfSavingReportsFiles.push([url, path, name]);
   }
 
